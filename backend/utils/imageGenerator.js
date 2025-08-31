@@ -103,13 +103,14 @@ class ImageGenerator {
   }
 
   /**
-   * Generates multiple images from an input image and prompt
+   * Generates multiple images from an input image and prompt with optimized concurrency
    * @param {Buffer} imageBuffer - Input image buffer
    * @param {string} prompt - Text prompt for image generation
    * @param {number} count - Number of images to generate (default: 4)
+   * @param {Function} onImageComplete - Optional callback for each completed image
    * @returns {Promise<Buffer[]>} - Array of image buffers
    */
-  async generateImagesFromImage(imageBuffer, prompt, count = 4) {
+  async generateImagesFromImage(imageBuffer, prompt, count = 4, onImageComplete = null) {
     if (!process.env.GEMINI_API_KEY) {
       throw new Error('GEMINI_API_KEY environment variable is not set');
     }
@@ -117,20 +118,34 @@ class ImageGenerator {
     console.log(`Generating ${count} images from input image with prompt: "${prompt}"`);
     
     const imageBuffers = [];
-    const generatePromises = [];
-
-    // Generate multiple images concurrently
-    for (let i = 0; i < count; i++) {
-      generatePromises.push(this.generateSingleImageFromImage(imageBuffer, prompt, i + 1));
+    const maxConcurrency = Math.min(count, 3); // Limit concurrent requests to prevent API throttling
+    const batches = [];
+    
+    // Split into batches for controlled concurrency
+    for (let i = 0; i < count; i += maxConcurrency) {
+      const batch = [];
+      for (let j = i; j < Math.min(i + maxConcurrency, count); j++) {
+        batch.push(j + 1);
+      }
+      batches.push(batch);
     }
 
     try {
-      const results = await Promise.all(generatePromises);
-      
-      // Filter out any failed generations and collect buffers
-      for (const result of results) {
-        if (result && result.length > 0) {
-          imageBuffers.push(...result);
+      // Process batches sequentially, but images within each batch concurrently
+      for (const batch of batches) {
+        const batchPromises = batch.map(index => 
+          this.generateSingleImageFromImageOptimized(imageBuffer, prompt, index, onImageComplete)
+        );
+        
+        const batchResults = await Promise.allSettled(batchPromises);
+        
+        // Collect successful results
+        for (const result of batchResults) {
+          if (result.status === 'fulfilled' && result.value && result.value.length > 0) {
+            imageBuffers.push(...result.value);
+          } else if (result.status === 'rejected') {
+            console.warn(`Batch generation failed:`, result.reason?.message || result.reason);
+          }
         }
       }
 
@@ -143,13 +158,25 @@ class ImageGenerator {
   }
 
   /**
-   * Generates a single image from an input image and prompt
+   * Generates a single image from an input image and prompt (legacy method)
    * @param {Buffer} imageBuffer - Input image buffer
    * @param {string} prompt - Text prompt for image generation
    * @param {number} index - Index for logging purposes
    * @returns {Promise<Buffer[]>} - Array containing image buffer(s)
    */
   async generateSingleImageFromImage(imageBuffer, prompt, index) {
+    return this.generateSingleImageFromImageOptimized(imageBuffer, prompt, index);
+  }
+
+  /**
+   * Optimized version: Generates a single image from an input image and prompt
+   * @param {Buffer} imageBuffer - Input image buffer
+   * @param {string} prompt - Text prompt for image generation
+   * @param {number} index - Index for logging purposes
+   * @param {Function} onComplete - Optional callback when image is complete
+   * @returns {Promise<Buffer[]>} - Array containing image buffer(s)
+   */
+  async generateSingleImageFromImageOptimized(imageBuffer, prompt, index, onComplete = null) {
     const base64Image = imageBuffer.toString('base64');
     const mimeType = this.detectMimeType(imageBuffer);
 
@@ -184,12 +211,18 @@ class ImageGenerator {
     try {
       console.log(`Generating image ${index} from input image...`);
       
-      const response = await this.ai.models.generateContentStream({
+      // Add timeout to prevent hanging requests
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error(`Image ${index} generation timeout after 60 seconds`)), 60000);
+      });
+      
+      const generationPromise = this.ai.models.generateContentStream({
         model: this.model,
         config: this.config,
         contents,
       });
-
+      
+      const response = await Promise.race([generationPromise, timeoutPromise]);
       const imageBuffers = [];
 
       for await (const chunk of response) {
@@ -202,6 +235,15 @@ class ImageGenerator {
           const buffer = Buffer.from(inlineData.data || '', 'base64');
           imageBuffers.push(buffer);
           console.log(`Image ${index} generated successfully from input image`);
+          
+          // Call completion callback if provided
+          if (onComplete && typeof onComplete === 'function') {
+            try {
+              await onComplete(buffer, index);
+            } catch (callbackError) {
+              console.warn(`Callback error for image ${index}:`, callbackError.message);
+            }
+          }
         } else if (chunk.text) {
           console.log(`AI Response for image ${index}:`, chunk.text);
         }
@@ -210,6 +252,11 @@ class ImageGenerator {
       return imageBuffers;
     } catch (error) {
       console.error(`Error generating image ${index} from input image:`, error.message);
+      
+      // Return empty array instead of throwing to allow other images to continue
+      if (error.message.includes('timeout')) {
+        console.warn(`Image ${index} generation timed out, continuing with other images`);
+      }
       return [];
     }
   }

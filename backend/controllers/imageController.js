@@ -1,6 +1,7 @@
 const PromptEnhancer = require('../utils/promptEnhancer');
 const ImageGenerator = require('../utils/imageGenerator');
 const CloudinaryUploader = require('../utils/cloudinaryUpload');
+const promptCache = require('../utils/promptCache');
 const User = require('../models/User');
 
 // Enhanced prompt generation based on structured fields
@@ -141,10 +142,19 @@ const generateImages = async (req, res) => {
     
     console.log("TEXT GENERATION - structuredPrompt with filters : ", structuredPrompt);
     
-    // Apply OpenAI enhancement if requested
+    // Apply OpenAI enhancement if requested (with caching)
     if (enhancePrompt && finalPrompt) {
-      const promptEnhancer = new PromptEnhancer();
-      finalPrompt = await promptEnhancer.enhancePrompt(finalPrompt);
+      // Check cache first
+      const cachedEnhancement = promptCache.get(finalPrompt);
+      if (cachedEnhancement) {
+        finalPrompt = cachedEnhancement;
+      } else {
+        const promptEnhancer = new PromptEnhancer();
+        const originalPrompt = finalPrompt;
+        finalPrompt = await promptEnhancer.enhancePrompt(finalPrompt);
+        // Cache the result
+        promptCache.set(originalPrompt, finalPrompt);
+      }
     }
 
     console.log("TEXT GENERATION - finalPrompt after enhancement : ", finalPrompt);
@@ -250,10 +260,19 @@ const generateFromImage = async (req, res) => {
     
     let finalPrompt = structuredPrompt;
     
-    // Apply OpenAI enhancement if requested
+    // Apply OpenAI enhancement if requested (with caching)
     if (enhancePrompt && finalPrompt) {
-      const promptEnhancer = new PromptEnhancer();
-      finalPrompt = await promptEnhancer.enhancePrompt(finalPrompt);
+      // Check cache first
+      const cachedEnhancement = promptCache.get(finalPrompt);
+      if (cachedEnhancement) {
+        finalPrompt = cachedEnhancement;
+      } else {
+        const promptEnhancer = new PromptEnhancer();
+        const originalPrompt = finalPrompt;
+        finalPrompt = await promptEnhancer.enhancePrompt(finalPrompt);
+        // Cache the result
+        promptCache.set(originalPrompt, finalPrompt);
+      }
     }
 
     console.log("finalPrompt after enhancement : ", finalPrompt);
@@ -262,13 +281,36 @@ const generateFromImage = async (req, res) => {
       return res.status(400).json({ error: 'Prompt is required' });
     }
 
-    // Generate images from input image
+    // Generate images from input image with optimized pipeline
     const imageGenerator = new ImageGenerator();
-    const images = await imageGenerator.generateImagesFromImage(imageFile.buffer, finalPrompt, imageCountInt);
-    
-    // Upload to Cloudinary
     const cloudinaryUploader = new CloudinaryUploader();
-    const imageUrls = await cloudinaryUploader.uploadMultiple(images);
+    const imageUrls = [];
+    
+    // Use callback to upload images as they complete (pipeline optimization)
+    const onImageComplete = async (imageBuffer, index) => {
+      try {
+        const fileName = `image_to_image_${Date.now()}_${index}`;
+        const url = await cloudinaryUploader.uploadBuffer(imageBuffer, fileName);
+        imageUrls.push(url);
+        console.log(`Image ${index} uploaded immediately after generation`);
+      } catch (uploadError) {
+        console.warn(`Failed to upload image ${index} immediately:`, uploadError.message);
+      }
+    };
+    
+    const images = await imageGenerator.generateImagesFromImage(
+      imageFile.buffer, 
+      finalPrompt, 
+      imageCountInt, 
+      onImageComplete
+    );
+    
+    // Upload any remaining images that weren't uploaded via callback
+    const remainingImages = images.filter((_, index) => !imageUrls[index]);
+    if (remainingImages.length > 0) {
+      const remainingUrls = await cloudinaryUploader.uploadMultiple(remainingImages, 'image_to_image_fallback');
+      imageUrls.push(...remainingUrls);
+    }
 
     // Store in user history
     if (req.user) {
