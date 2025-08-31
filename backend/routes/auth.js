@@ -10,6 +10,9 @@ const router = express.Router();
 // Signup endpoint
 router.post('/signup', validateRegistration, async (req, res) => {
   try {
+
+    return res.status(200).json({ message: 'Sign is paused for now' });
+    
     const { name, email, password } = req.body;
     const existing = await User.findOne({ email });
     if (existing) {
