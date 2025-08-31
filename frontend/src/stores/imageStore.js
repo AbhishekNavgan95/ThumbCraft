@@ -12,10 +12,17 @@ const useImageStore = create((set, get) => ({
   isDownloadingZip: false,
   
   generateThumbnails: async (prompt, answers, uploadedImage = null) => {
-    // Cancel any existing request
+    // Only cancel existing request if we're not already loading
     const state = get();
-    if (state.abortController) {
+    if (state.abortController && !state.isLoading) {
+      console.log('Cancelling previous request');
       state.abortController.abort();
+    }
+    
+    // Don't start a new request if one is already in progress
+    if (state.isLoading) {
+      console.log('Request already in progress, skipping');
+      return { success: false, error: 'Request already in progress' };
     }
     
     // Create new abort controller
@@ -94,18 +101,46 @@ const useImageStore = create((set, get) => ({
       
       return { success: true };
     } catch (error) {
-      // Don't set error state if request was aborted
+      console.log('Image generation error:', error);
+      
+      // Don't set error state if request was aborted by user
       if (error.name === 'AbortError' || error.name === 'CanceledError') {
+        console.log('Request was aborted by user');
         set({ isLoading: false, abortController: null });
         return { success: false, aborted: true };
       }
       
+      // Check if it's a timeout error
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        console.log('Request timed out');
+        set({ 
+          isLoading: false,
+          error: 'Request timed out. Please try again.',
+          abortController: null
+        });
+        return { success: false, error: 'Request timed out. Please try again.' };
+      }
+      
+      // Check if it's a network error
+      if (error.message?.includes('NS_BINDING_ABORTED') || error.message?.includes('Network Error')) {
+        console.log('Network error occurred');
+        set({ 
+          isLoading: false,
+          error: 'Network error. Please check your connection and try again.',
+          abortController: null
+        });
+        return { success: false, error: 'Network error. Please check your connection and try again.' };
+      }
+      
+      // Generic error handling
+      const errorMessage = error.message || 'Failed to generate thumbnails';
+      console.log('Generic error:', errorMessage);
       set({ 
         isLoading: false,
-        error: error.message || 'Failed to generate thumbnails',
+        error: errorMessage,
         abortController: null
       });
-      return { success: false, error: error.message || 'Failed to generate thumbnails' };
+      return { success: false, error: errorMessage };
     }
   },
   

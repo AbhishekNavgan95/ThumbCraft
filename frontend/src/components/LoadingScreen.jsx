@@ -49,8 +49,12 @@ const LoadingScreen = () => {
 
   useEffect(() => {
     const generateImages = async () => {
-      if (hasGenerated.current) return; // Prevent multiple calls
+      if (hasGenerated.current) {
+        console.log('Generation already started, skipping');
+        return; // Prevent multiple calls
+      }
       hasGenerated.current = true;
+      console.log('Starting image generation process');
       
       try {
         // Use the appropriate prompt based on generation mode
@@ -86,7 +90,7 @@ const LoadingScreen = () => {
     };
 
     generateImages();
-  }, [prompt, imageDescription, answers, uploadedImage, generationMode]); // Added missing dependencies
+  }, []); // Empty dependency array to run only once
 
   return (
     <div className="max-w-4xl mx-auto text-center">

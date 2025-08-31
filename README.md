@@ -1,183 +1,209 @@
-# AI Image Generator Server
+# AI Thumbnail Generator
 
-A powerful Express.js server that generates AI images using Google's Gemini AI, with OpenAI prompt enhancement and Cloudinary hosting.
+> **Demo Credentials**
+> 
+> Email: `navganabhishek90@gmail.com`
+> 
+> Password: `Abhi@1212`
+>
+> **Live Demo:** [https://thumbcraft.abhisheknavgan.xyz/](https://thumbcraft.abhisheknavgan.xyz/)
 
-## Features
+A full-stack web application for generating high-quality, YouTube-ready thumbnails using AI. Supports both text-to-image and image-to-image workflows, advanced filtering, OpenAI-powered prompt enhancement, Cloudinary image hosting, and complete user generation history.
 
-- 🎨 **Generate 4 AI images** from text prompts using Google Gemini
-- 🚀 **Prompt Enhancement** with OpenAI ChatML format (optional toggle)
-- ☁️ **Cloudinary Integration** for automatic image hosting
-- 🌐 **RESTful API** with Express.js
-- 📊 **Health Check** endpoint for service monitoring
-- 🔧 **Modular Architecture** with reusable utility classes
+---
 
-## Setup
+## 🚀 Features
 
-### 1. Install Dependencies
-```bash
-cd backend
-npm install
-```
+### 🌐 Frontend (React + Vite)
+- **Modern UI/UX:** Built with React, TailwindCSS, Zustand state management, and Vite for fast development.
+- **Multi-Step Generation Flow:**
+  - **Mode Selection:** Choose between text prompt or image upload.
+  - **Prompt Input:** Enter a description or upload an image, with a dedicated description field for enhancements.
+  - **AI Enhancer Toggle:** Optionally let OpenAI improve your prompt for better results.
+  - **Questionnaire:** Answer customizable questions (category, mood, theme, color, text style, etc.) for more control.
+  - **Template Selection:** Choose from 8 high-CTR visual templates (SVG-based) proven to boost click-through rates.
+  - **Results Grid:** Preview, download, and manage generated thumbnails (HD, ZIP download, individual download).
+  - **History Page:** View, search, filter, and bulk-download all your previous generations.
+  - **Selection Pills:** Remove individual selections in the flow for easy editing.
+- **Authentication:** User login and session management (if enabled).
 
-### 2. Get API Keys
+### 🛠️ Backend (Node.js + Express)
+- **RESTful API:** Endpoints for generation, image upload, and history management.
+- **OpenAI Integration:** Enhances user prompts using ChatGPT for richer, more detailed AI instructions.
+- **Google Gemini AI:** Generates images from text or image+prompt using Gemini's image models.
+- **Cloudinary Hosting:** All generated images are uploaded and served from Cloudinary CDN.
+- **MongoDB Storage:** Stores user data, generation history, and template usage analytics.
+- **User History:** Every generation (prompt, filters, template, results) is saved per user for analytics and re-use.
+- **Robust Error Handling:** Handles API errors, file validation, and service health.
 
-**Google Gemini API:**
-- Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
-- Create and copy your API key
+---
 
-**OpenAI API (for prompt enhancement):**
-- Visit [OpenAI Platform](https://platform.openai.com/api-keys)
-- Create and copy your API key
+## 🏗️ Workflow Overview
 
-**Cloudinary (for image hosting):**
-- Visit [Cloudinary Console](https://cloudinary.com/console)
-- Get your Cloud Name, API Key, and API Secret
+1. **User Query & Input:**
+   - User selects generation mode (prompt or image).
+   - Provides a text description or uploads an image, with optional AI enhancement toggle.
+   - Answers a series of filter questions (category, mood, style, etc.).
+   - Optionally selects a visual template for the thumbnail.
 
-### 3. Environment Setup
-```bash
-# Copy the example file
-cp .env.example .env
+2. **Frontend Processing:**
+   - State is managed with Zustand stores (`uiStore.js`, `imageStore.js`).
+   - User selections, prompt, and image are validated and prepared for API submission.
 
-# Edit .env with your actual credentials
-GEMINI_API_KEY=your_gemini_api_key_here
-OPENAI_API_KEY=your_openai_api_key_here
-CLOUDINARY_CLOUD_NAME=your_cloud_name_here
-CLOUDINARY_API_KEY=your_cloudinary_api_key_here
-CLOUDINARY_API_SECRET=your_cloudinary_api_secret_here
-PORT=3000
-```
+3. **Backend Processing:**
+   - Receives user data (prompt, filters, image, template, enhancement toggle).
+   - If enabled, uses OpenAI to enhance the prompt for better visual results.
+   - Generates images using Google Gemini, strictly following user filters and template (if provided).
+   - Uploads generated images to Cloudinary and saves URLs.
+   - Stores generation details in MongoDB under the user's history.
 
-## Usage
+4. **Response & Storage:**
+   - Returns generated image URLs, prompt details, and metadata to the frontend.
+   - Frontend displays results, allows downloads, and updates the user's history view.
 
-### Start the Server
-```bash
-npm start
-# or
-node server.js
-```
+5. **History & Analytics:**
+   - Users can view, search, filter, and bulk-download their entire generation history.
+   - History includes all prompt/filter/template data for easy re-generation or analytics.
 
-### API Endpoints
+---
 
-#### Health Check
-```bash
-GET /health
-```
-Returns service status and configuration check.
+## 📦 Technology Stack
 
-#### Generate Images from Text
-```bash
+### Frontend
+- **React** (UI)
+- **Vite** (build tool)
+- **TailwindCSS** (styling)
+- **Zustand** (state management)
+- **Axios** (HTTP requests)
+- **JSZip** (ZIP downloads)
+- **Lucide-react** (icons)
+
+### Backend
+- **Node.js** + **Express** (API server)
+- **@google/genai** (Gemini AI SDK)
+- **openai** (OpenAI API)
+- **cloudinary** (image CDN)
+- **mongoose** (MongoDB ODM)
+- **multer** (file uploads)
+- **jsonwebtoken** (auth)
+- **dotenv** (env config)
+- **cors**, **mime**, **bcryptjs** (utilities)
+
+---
+
+## 📝 Example API Workflow
+
+### 1. Generate from Prompt
+```http
 POST /api/generate
 Content-Type: application/json
-
 {
-  "prompt": "A beautiful sunset over mountains",
-  "enhancePrompt": true
+  "prompt": "A bold tech thumbnail with neon blue colors",
+  "enhancePrompt": true,
+  "category": "Tech",
+  "mood": "Excited",
+  ...other filters
 }
 ```
 
-**Parameters:**
-- `prompt` (string, required): Text description for image generation
-- `enhancePrompt` (boolean, optional): Whether to enhance the prompt using OpenAI (default: false)
-
-#### Generate Images from Input Image
-```bash
+### 2. Generate from Image
+```http
 POST /api/generate-from-image
 Content-Type: multipart/form-data
-
-Form Data:
-- image: [image file] (required)
-- prompt: "Transform this into a cyberpunk style" (required)
-- enhancePrompt: true (optional)
+image: [file]
+prompt: "Add bold text overlay, make colors more vibrant"
+enhancePrompt: true
+...other filters
 ```
 
-**Parameters:**
-- `image` (file, required): Input image file (JPEG, PNG, GIF, WebP, max 10MB)
-- `prompt` (string, required): Text description for image transformation
-- `enhancePrompt` (boolean, optional): Whether to enhance the prompt using OpenAI (default: false)
-
-**Response (for both endpoints):**
-```json
-{
-  "success": true,
-  "data": {
-    "originalPrompt": "Transform this into a cyberpunk style",
-    "finalPrompt": "A breathtaking cyberpunk transformation with neon lights...",
-    "enhancedPrompt": true,
-    "inputImage": {
-      "originalName": "photo.jpg",
-      "size": 1024000,
-      "mimeType": "image/jpeg"
-    },
-    "imagesGenerated": 4,
-    "imageUrls": [
-      "https://res.cloudinary.com/your-cloud/image/upload/v1234567890/ai-generated-images/image1.png",
-      "https://res.cloudinary.com/your-cloud/image/upload/v1234567890/ai-generated-images/image2.png",
-      "https://res.cloudinary.com/your-cloud/image/upload/v1234567890/ai-generated-images/image3.png",
-      "https://res.cloudinary.com/your-cloud/image/upload/v1234567890/ai-generated-images/image4.png"
-    ],
-    "timestamp": "2024-08-30T07:28:39.123Z"
-  }
-}
+### 3. Get User History
+```http
+GET /api/history
+Authorization: Bearer <token>
 ```
 
-*Note: `inputImage` field is only present in `/api/generate-from-image` responses.*
+---
 
-### Example Usage
+## 🔑 Key Features Detailed
 
-**Basic Generation:**
+- **Multi-Mode Generation:** Supports both text-to-image and image-to-image (with enhancement description) flows.
+- **Template System:** 8 high-CTR SVG templates, visually selectable, strictly enforced by backend AI prompts.
+- **Filters & Customization:** Category, mood, theme, color, text, style, and more, all sent to backend for precise AI control.
+- **Prompt Enhancement:** OpenAI-powered toggle for richer, more detailed prompts.
+- **Image Hosting:** All images are uploaded to Cloudinary and served via CDN.
+- **User Generation History:** Every generation (with all metadata) is stored in MongoDB and viewable/searchable in the frontend.
+- **ZIP Download:** Download all generated images in a session as a ZIP file.
+- **Bulk Actions:** Select, delete, or export multiple history items.
+- **Comprehensive Error Handling:** Friendly error messages for validation, API, and upload issues.
+
+---
+
+## ⚙️ Setup & Installation
+
+### 1. Clone & Install
 ```bash
-curl -X POST http://localhost:3000/api/generate \
-  -H "Content-Type: application/json" \
-  -d '{"prompt": "A futuristic city with flying cars"}'
+git clone <repo-url>
+cd thumbnail-generator
+cd backend && npm install
+cd ../frontend && npm install
 ```
 
-**With Prompt Enhancement:**
+### 2. Configure Environment
+- Copy `.env.example` to `.env` in backend and fill in your API keys for Gemini, OpenAI, Cloudinary, and MongoDB.
+
+### 3. Run Locally
 ```bash
-curl -X POST http://localhost:3000/api/generate \
-  -H "Content-Type: application/json" \
-  -d '{"prompt": "A cat", "enhancePrompt": true}'
+# Start backend
+cd backend && npm run dev
+# Start frontend
+cd ../frontend && npm run dev
 ```
 
-**Image-to-Image Generation:**
-```bash
-curl -X POST http://localhost:3000/api/generate-from-image \
-  -F "image=@/path/to/your/image.jpg" \
-  -F "prompt=Transform this into a cyberpunk style" \
-  -F "enhancePrompt=true"
-```
+---
 
-## Architecture
+## 📂 Project Structure
 
 ```
-backend/
-├── server.js                 # Main Express server
-├── utils/
-│   ├── promptEnhancer.js     # OpenAI prompt enhancement
-│   ├── imageGenerator.js     # Google Gemini image generation
-│   └── cloudinaryUpload.js   # Cloudinary upload utility
-├── package.json
-└── .env.example
+thumbnail-generator/
+├── backend/
+│   ├── controllers/
+│   ├── models/
+│   ├── utils/
+│   ├── data/
+│   ├── server.js
+│   └── ...
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── stores/
+│   │   ├── api/
+│   │   └── ...
+│   └── ...
+└── README.md
 ```
 
-## Dependencies
+---
 
-- **@google/genai** - Google Generative AI SDK
-- **openai** - OpenAI API client
-- **cloudinary** - Cloudinary upload service
-- **express** - Web framework
-- **cors** - Cross-origin resource sharing
-- **dotenv** - Environment variable management
-- **mime** - MIME type utilities
+## 📜 License
+MIT
 
-## Error Handling
+---
 
-The server includes comprehensive error handling:
-- Missing or invalid prompts
-- API key validation
-- Service configuration checks
-- Image generation failures
-- Upload errors
+## 🙏 Credits
+- [OpenAI](https://openai.com/)
+- [Google Gemini](https://aistudio.google.com/)
+- [Cloudinary](https://cloudinary.com/)
+- [Vite](https://vitejs.dev/)
+- [React](https://react.dev/)
+- [TailwindCSS](https://tailwindcss.com/)
 
-## Development
+---
 
-The server automatically checks service configurations on startup and provides helpful status messages for missing credentials.
+## ✨ Contributing
+Pull requests and issues welcome! Please see [CONTRIBUTING.md] if available.
+
+---
+
+## 📧 Contact
+For support or questions, open an issue or contact the maintainer.

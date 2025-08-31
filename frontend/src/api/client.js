@@ -3,7 +3,7 @@ import axios from 'axios';
 // Create axios instance with default configuration
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000',
-  timeout: 30000, // 30 seconds timeout for image generation requests
+  timeout: 120000, // 2 minutes timeout for image generation requests
   headers: {
     'Content-Type': 'application/json',
   },
@@ -49,14 +49,32 @@ apiClient.interceptors.response.use(
       });
     } else if (error.request) {
       // The request was made but no response was received
+      if (error.code === 'ECONNABORTED') {
+        return Promise.reject({
+          message: 'Request timed out. Please try again.',
+          status: 0,
+          code: 'TIMEOUT'
+        });
+      }
       return Promise.reject({
         message: 'Network error. Please check your connection.',
         status: 0
       });
     } else {
       // Something happened in setting up the request that triggered an Error
+      const message = error.message || 'An unexpected error occurred';
+      
+      // Handle specific browser cancellation errors
+      if (message.includes('NS_BINDING_ABORTED') || message.includes('canceled')) {
+        return Promise.reject({
+          message: 'Request was cancelled. Please try again.',
+          status: 0,
+          code: 'CANCELLED'
+        });
+      }
+      
       return Promise.reject({
-        message: error.message || 'An unexpected error occurred',
+        message,
         status: 0
       });
     }
@@ -94,6 +112,7 @@ export const api = {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 180000, // 3 minutes for image generation
         signal,
       });
     },
@@ -120,6 +139,7 @@ export const api = {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 180000, // 3 minutes for image generation
         signal,
       });
     },
