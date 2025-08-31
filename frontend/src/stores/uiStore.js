@@ -186,7 +186,7 @@ const useUIStore = create((set, get) => ({
     {
       key: 'imageCount',
       title: 'How many thumbnails do you want?',
-      options: ['1', '2', '3', '4']
+      options: ['1', '2']
     }
   ]
 }));

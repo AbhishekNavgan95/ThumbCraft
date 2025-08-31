@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../stores/authStore';
 import useUIStore from '../stores/uiStore';
 import LoginModal from './LoginModal';
-import { ChevronDown, History, LogOut, Sparkles } from 'lucide-react';
+import { ChevronDown, History, LogOut, Sparkles, ExternalLink } from 'lucide-react';
 
 const Header = () => {
   const navigate = useNavigate();
@@ -40,6 +40,16 @@ const Header = () => {
 
             {/* Auth Section */}
             <div className="flex items-center space-x-4">
+              {/* Portfolio Link */}
+              <a
+                href="https://abhisheknavgan.xyz"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden md:flex items-center space-x-1 text-gray-600 hover:text-blue-600 transition-colors duration-200 px-3 py-2 rounded-lg hover:bg-gray-50"
+              >
+                <span className="text-sm font-medium">Portfolio</span>
+                <ExternalLink className="w-4 h-4" />
+              </a>
               {isAuthenticated ? (
                 <div className="relative">
                   <button
