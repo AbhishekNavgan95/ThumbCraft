@@ -8,11 +8,34 @@ const LoginModal = ({ isOpen, onClose }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, signup, isLoading, error, clearError } = useAuthStore();
+  const { login, signup, isLoading, error, successMessage, clearMessages } = useAuthStore();
   const { generationMode, setCurrentStep } = useUIStore();
+
+  const validateForm = () => {
+    if (isSignupMode && (!name || name.trim().length < 2)) {
+      return 'Name must be at least 2 characters long';
+    }
+    
+    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+      return 'Please enter a valid email address';
+    }
+    
+    if (!password || password.length < 6) {
+      return 'Password must be at least 6 characters long';
+    }
+    
+    return null;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Client-side validation
+    const validationError = validateForm();
+    if (validationError) {
+      useAuthStore.setState({ error: validationError });
+      return;
+    }
     
     const result = isSignupMode 
       ? await signup(name, email, password)
@@ -22,12 +45,16 @@ const LoginModal = ({ isOpen, onClose }) => {
       setName('');
       setEmail('');
       setPassword('');
-      onClose();
       
-      // If user was trying to create a thumbnail before login, proceed to input step
-      if (generationMode) {
-        setCurrentStep('input');
-      }
+      // Show success message briefly before closing modal
+      setTimeout(() => {
+        onClose();
+        
+        // If user was trying to create a thumbnail before login, proceed to input step
+        if (generationMode) {
+          setCurrentStep('input');
+        }
+      }, 1500); // Give user time to see success message
     }
   };
 
@@ -36,13 +63,13 @@ const LoginModal = ({ isOpen, onClose }) => {
     setEmail('');
     setPassword('');
     setIsSignupMode(false);
-    clearError();
+    clearMessages();
     onClose();
   };
 
   const toggleMode = () => {
     setIsSignupMode(!isSignupMode);
-    clearError();
+    clearMessages();
   };
 
   if (!isOpen) return null;
@@ -67,14 +94,35 @@ const LoginModal = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        <div className="mx-6 text-sm   text-center py-1 bg-amber-100 border border-amber-200 rounded-lg">
-          <p>Render pe hosted hai bhot ager response time slow hoga to thoda sa wait kar lena 🙏🙏</p>
+        <div className="mx-6 mb-4 text-center">
+          <div className="bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl p-4 shadow-sm">
+            <div className="flex items-center justify-center mb-2">
+              <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse mr-2"></div>
+              <span className="text-orange-800 font-semibold text-sm uppercase tracking-wide">Server Notice</span>
+              <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse ml-2"></div>
+            </div>
+            <p className="text-orange-900 font-medium text-base leading-relaxed">
+              🚀 <strong>Hosted on Render:</strong> Response times may be slower than usual. It may take 30-60 seconds to respond 🙏
+            </p>
+            <div className="mt-2 text-xs text-orange-700 opacity-75">
+              Free tier limitations - thank you for your understanding! ✨
+            </div>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6">
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
               {error}
+            </div>
+          )}
+          
+          {successMessage && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center">
+              <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              {successMessage}
             </div>
           )}
 

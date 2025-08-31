@@ -102,7 +102,7 @@ const Footer = () => {
             © {currentYear} ThumbnailAI. All rights reserved.
           </p>
           <p className="text-gray-400 text-sm mt-4 sm:mt-0">
-            Made with ❤️ for creators worldwide
+            Made with ❤️ by Abhishek Navgan
           </p>
         </div>
       </div>
