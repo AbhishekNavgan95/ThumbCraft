@@ -10,6 +10,8 @@ const useUIStore = create((set, get) => ({
   // User inputs
   prompt: '',
   uploadedImage: null,
+  imageDescription: '',
+  enhancePrompt: false,
   
   // Questions and answers
   currentQuestionIndex: 0,
@@ -40,10 +42,21 @@ const useUIStore = create((set, get) => ({
   
   setUploadedImage: (image) => set({ uploadedImage: image }),
   
+  setImageDescription: (description) => set({ imageDescription: description }),
+  
+  setEnhancePrompt: (enhance) => set({ enhancePrompt: enhance }),
+  
   setAnswer: (questionKey, value) => set((state) => ({
     answers: {
       ...state.answers,
       [questionKey]: value
+    }
+  })),
+  
+  removeAnswer: (questionKey) => set((state) => ({
+    answers: {
+      ...state.answers,
+      [questionKey]: ''
     }
   })),
   
@@ -83,6 +96,8 @@ const useUIStore = create((set, get) => ({
     generationMode: null,
     prompt: '',
     uploadedImage: null,
+    imageDescription: '',
+    enhancePrompt: false,
     currentQuestionIndex: 0,
     answers: {
       category: '',

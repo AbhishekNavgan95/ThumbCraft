@@ -11,6 +11,7 @@ const QuestionFlow = () => {
     prompt,
     uploadedImage,
     setAnswer,
+    removeAnswer,
     nextQuestion,
     previousQuestion,
     skipQuestion,
@@ -244,7 +245,7 @@ const QuestionFlow = () => {
                 .trim();
               
               return (
-                <div key={question.key} className="inline-flex items-center bg-white border border-gray-200 rounded-md px-4 py-2 shadow-sm">
+                <div key={question.key} className="inline-flex items-center bg-white border border-gray-200 rounded-md px-4 py-2 shadow-sm group">
                   <CheckCircle className="w-5 h-5 mr-2 text-blue-600" />
                   <span className="text-xs font-medium text-gray-500 uppercase tracking-wide mr-2">
                     {questionLabel}
@@ -252,6 +253,13 @@ const QuestionFlow = () => {
                   <span className="text-sm font-medium ml-2 bg-blue-100 text-blue-800 px-4 py-1 rounded-md">
                     {answer.length > 15 ? `${answer.substring(0, 15)}...` : answer}
                   </span>
+                  <button
+                    onClick={() => removeAnswer(question.key)}
+                    className="ml-2 text-gray-400 hover:text-red-500 focus:outline-none focus:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                    title="Remove selection"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               );
             })}

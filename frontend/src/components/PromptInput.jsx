@@ -11,6 +11,8 @@ const PromptInput = () => {
     setCurrentStep, 
     resetFlow,
     uploadedImage,
+    imageDescription,
+    setImageDescription,
     enhancePrompt,
     setEnhancePrompt
   } = useUIStore();
@@ -25,6 +27,11 @@ const PromptInput = () => {
     
     if (generationMode === 'image' && !uploadedImage) {
       setError('Please upload an image to continue');
+      return;
+    }
+    
+    if (generationMode === 'image' && !imageDescription.trim()) {
+      setError('Please provide a description for your thumbnail');
       return;
     }
 
@@ -45,6 +52,11 @@ const PromptInput = () => {
     
     if (generationMode === 'image' && !uploadedImage) {
       setError('Please upload an image to continue');
+      return;
+    }
+    
+    if (generationMode === 'image' && !imageDescription.trim()) {
+      setError('Please provide a description for your thumbnail');
       return;
     }
 
@@ -126,7 +138,60 @@ const PromptInput = () => {
             </div>
           </div>
         ) : (
-          <ImageUpload />
+          <div>
+            <ImageUpload />
+            
+            {/* Thumbnail Description for Image Mode */}
+            {uploadedImage && (
+              <div className="mt-6">
+                <label htmlFor="imageDescription" className="block text-sm font-medium text-gray-700 mb-3">
+                  Thumbnail Description
+                </label>
+                <textarea
+                  id="imageDescription"
+                  value={imageDescription}
+                  onChange={(e) => {
+                    setImageDescription(e.target.value);
+                    setError('');
+                  }}
+                  className="w-full h-32 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  placeholder="Describe how you want to enhance this image for your thumbnail... (e.g., 'Add bold text overlay, make colors more vibrant, add gaming elements')"
+                />
+                <div className="flex justify-between items-center mt-2">
+                  <span className="text-xs text-gray-500">
+                    {imageDescription.length} characters
+                  </span>
+                  <div className="text-xs text-gray-500">
+                    Describe the enhancements you want
+                  </div>
+                </div>
+                
+                {/* AI Enhancer Toggle for Image Mode */}
+                <div className="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Zap className="w-5 h-5 text-purple-600 mr-2" />
+                      <div>
+                        <h4 className="text-sm font-medium text-purple-900">AI Enhancement</h4>
+                        <p className="text-xs text-purple-700 mt-1">
+                          Let AI automatically enhance your description for better results
+                        </p>
+                      </div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={enhancePrompt}
+                        onChange={(e) => setEnhancePrompt(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {error && (
