@@ -105,7 +105,7 @@ app.get('/health', (req, res) => {
 });
 
 // Main image generation endpoint
-app.post('/api/generate', express.json(), requireAuth, generateImages);
+app.post('/api/generate', upload.none(), requireAuth, generateImages);
 
 // Image-to-image generation endpoint
 app.post('/api/generate-from-image', upload.single('image'), requireAuth, generateFromImage);

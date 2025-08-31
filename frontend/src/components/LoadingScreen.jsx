@@ -4,7 +4,14 @@ import useImageStore from '../stores/imageStore';
 import { Loader2, Info } from 'lucide-react';
 
 const LoadingScreen = () => {
-  const { prompt, answers, uploadedImage, completeGeneration } = useUIStore();
+  const { 
+    prompt, 
+    answers, 
+    uploadedImage, 
+    completeGeneration, 
+    generationMode, 
+    imageDescription 
+  } = useUIStore();
   const { generateThumbnails, isLoading } = useImageStore();
   const [loadingText, setLoadingText] = useState('Analyzing your prompt...');
   const [progress, setProgress] = useState(0);
@@ -46,19 +53,40 @@ const LoadingScreen = () => {
       hasGenerated.current = true;
       
       try {
-        await generateThumbnails(prompt, answers, uploadedImage);
-        setProgress(100);
-        setTimeout(() => {
-          completeGeneration();
-        }, 1000);
+        // Use the appropriate prompt based on generation mode
+        const effectivePrompt = generationMode === 'image' ? imageDescription : prompt;
+        console.log('Starting image generation, mode:', generationMode);
+        
+        // Validate that we have the required inputs
+        if (!effectivePrompt || effectivePrompt.trim() === '') {
+          throw new Error('No prompt provided for generation');
+        }
+        
+        if (generationMode === 'image' && !uploadedImage) {
+          throw new Error('Image generation mode selected but no image uploaded');
+        }
+        
+        const result = await generateThumbnails(effectivePrompt, answers, uploadedImage);
+        console.log('Generation result:', result);
+        
+        if (result && result.success) {
+          console.log('Generation successful, updating progress and completing...');
+          setProgress(100);
+          setTimeout(() => {
+            completeGeneration();
+          }, 1000);
+        } else {
+          console.error('Generation failed or returned falsy result:', result);
+          hasGenerated.current = false; // Reset on error so user can retry
+        }
       } catch (error) {
-        console.error('Generation failed:', error);
+        console.error('Generation failed with exception:', error);
         hasGenerated.current = false; // Reset on error so user can retry
       }
     };
 
     generateImages();
-  }, [prompt, answers, uploadedImage]); // Removed functions from dependency array
+  }, [prompt, imageDescription, answers, uploadedImage, generationMode]); // Added missing dependencies
 
   return (
     <div className="max-w-4xl mx-auto text-center">

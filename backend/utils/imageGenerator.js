@@ -153,10 +153,16 @@ class ImageGenerator {
     const base64Image = imageBuffer.toString('base64');
     const mimeType = this.detectMimeType(imageBuffer);
 
-    // Create enhanced prompt that ensures reference to the original image
-    const systemPrompt = `You are an AI image generator that creates new images based on a reference image provided by the user. IMPORTANT: Always use the provided reference image as the foundation for your generation. The new image should maintain key visual elements, composition, or style from the reference image while incorporating the user's requested modifications or transformations. Never ignore the reference image - it should always influence your output.`;
+    // Create enhanced prompt that ensures strong reference to the original image
+    const systemPrompt = `You are a thumbnail creator that modifies existing images. CRITICAL INSTRUCTIONS:
+1. Use the provided reference image as the primary foundation - preserve ALL key visual elements
+2. Keep the same characters, objects, faces, and overall composition from the original
+3. Only apply the requested style modifications as overlays or enhancements
+4. The original subject matter and recognizable elements must remain clearly visible
+5. Think of this as "restyling" the existing image, not creating something new
+6. Generate the image in 16:9 widescreen aspect ratio format suitable for thumbnails`;
     
-    const enhancedPrompt = `${systemPrompt}\n\nUser request: ${prompt}\n\nPlease generate a new image that references and builds upon the provided image while fulfilling the user's request.`;
+    const enhancedPrompt = `${systemPrompt}\n\nModification request: ${prompt}\n\nIMPORTANT: Start with the provided reference image and apply only the requested modifications while keeping all original elements intact and recognizable. Create the final image in 16:9 widescreen thumbnail format.`;
 
     const contents = [
       {

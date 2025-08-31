@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { api } from '../api/client';
 import JSZip from 'jszip';
+import useUIStore from './uiStore';
 
 const useImageStore = create((set, get) => ({
   generatedImages: [],
@@ -22,24 +23,53 @@ const useImageStore = create((set, get) => ({
     set({ isLoading: true, error: null, abortController });
     
     try {
-      // Build the final prompt with answers
-      const finalPrompt = buildFinalPrompt(prompt, answers);
+      // Get enhancePrompt and originalPrompt from UI store
+      const uiState = useUIStore.getState();
       
+      // Determine the original prompt based on generation mode
+      let originalPrompt;
+      if (uiState.generationMode === 'image') {
+        originalPrompt = uiState.imageDescription;
+      } else {
+        originalPrompt = uiState.prompt;
+      }
+      
+      // Send the raw prompt and let backend handle enhancement
       const requestData = {
-        prompt: finalPrompt,
-        originalPrompt: prompt,
-        answers
+        prompt: originalPrompt,
+        originalPrompt: originalPrompt,
+        enhancePrompt: uiState.enhancePrompt,
+        imageCount: answers.imageCount || (uploadedImage ? '1' : '4'),
+        // Send individual answer fields to backend for proper prompt structuring
+        category: answers.category,
+        mood: answers.mood,
+        theme: answers.theme,
+        primaryColor: answers.primaryColor,
+        includeText: answers.includeText,
+        textStyle: answers.textStyle,
+        thumbnailStyle: answers.thumbnailStyle,
+        customPrompt: answers.customPrompt
       };
 
       let response;
       if (uploadedImage) {
         requestData.image = uploadedImage;
+        console.log('Making image-to-image API request');
         response = await api.images.generateFromImage(requestData, abortController.signal);
       } else {
         response = await api.images.generate(requestData, abortController.signal);
       }
 
+      console.log('API Response received, success:', response.data?.success);
       const { data } = response;
+
+      if (!data || !data.success) {
+        throw new Error(data?.error || 'API response indicates failure');
+      }
+
+      if (!data.images || !Array.isArray(data.images) || data.images.length === 0) {
+        throw new Error('Invalid response: No images received from API');
+      }
 
       set({ 
         generatedImages: data.images,
@@ -50,8 +80,8 @@ const useImageStore = create((set, get) => ({
       // Add to history
       const historyItem = {
         id: Date.now(),
-        originalPrompt: prompt,
-        finalPrompt,
+        originalPrompt: originalPrompt,
+        finalPrompt: data.prompt || originalPrompt,
         answers,
         images: data.images,
         timestamp: new Date().toISOString(),

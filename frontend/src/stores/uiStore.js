@@ -24,7 +24,7 @@ const useUIStore = create((set, get) => ({
     textStyle: '',
     thumbnailStyle: '',
     customPrompt: '',
-    imageCount: '4'
+    imageCount: '1'
   },
   
   // Modal states
@@ -60,17 +60,36 @@ const useUIStore = create((set, get) => ({
     }
   })),
   
-  nextQuestion: () => set((state) => ({
-    currentQuestionIndex: Math.min(state.currentQuestionIndex + 1, get().questions.length - 1)
-  })),
+  nextQuestion: () => {
+    const state = get();
+    let nextIndex = state.currentQuestionIndex + 1;
+    const questions = get().questions;
+    
+    // Skip textStyle question if includeText is 'No'
+    if (nextIndex < questions.length && questions[nextIndex].key === 'textStyle' && state.answers.includeText === 'No') {
+      nextIndex += 1;
+    }
+    
+    set({ currentQuestionIndex: Math.min(nextIndex, questions.length - 1) });
+  },
   
-  previousQuestion: () => set((state) => ({
-    currentQuestionIndex: Math.max(state.currentQuestionIndex - 1, 0)
-  })),
+  previousQuestion: () => {
+    const state = get();
+    let prevIndex = state.currentQuestionIndex - 1;
+    const questions = get().questions;
+    
+    // Skip textStyle question when going back if includeText is 'No'
+    if (prevIndex >= 0 && questions[prevIndex].key === 'textStyle' && state.answers.includeText === 'No') {
+      prevIndex -= 1;
+    }
+    
+    set({ currentQuestionIndex: Math.max(prevIndex, 0) });
+  },
   
   skipQuestion: () => {
     const state = get();
-    if (state.currentQuestionIndex < 7) {
+    const questions = get().questions;
+    if (state.currentQuestionIndex < questions.length - 1) {
       set({ currentQuestionIndex: state.currentQuestionIndex + 1 });
     } else {
       set({ currentStep: 'loading' });
@@ -108,7 +127,7 @@ const useUIStore = create((set, get) => ({
       textStyle: '',
       thumbnailStyle: '',
       customPrompt: '',
-      imageCount: '4'
+      imageCount: '1'
     },
     isGenerating: false
   }),

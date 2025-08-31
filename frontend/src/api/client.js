@@ -77,13 +77,18 @@ export const api = {
       const formData = new FormData();
       formData.append('prompt', data.prompt);
       formData.append('originalPrompt', data.originalPrompt);
+      formData.append('enhancePrompt', data.enhancePrompt || false);
+      formData.append('imageCount', data.imageCount || '4');
       
-      // Add answers to form data
-      Object.entries(data.answers).forEach(([key, value]) => {
-        if (value) {
-          formData.append(key, value);
-        }
-      });
+      // Add individual answer fields
+      if (data.category) formData.append('category', data.category);
+      if (data.mood) formData.append('mood', data.mood);
+      if (data.theme) formData.append('theme', data.theme);
+      if (data.primaryColor) formData.append('primaryColor', data.primaryColor);
+      if (data.includeText) formData.append('includeText', data.includeText);
+      if (data.textStyle) formData.append('textStyle', data.textStyle);
+      if (data.thumbnailStyle) formData.append('thumbnailStyle', data.thumbnailStyle);
+      if (data.customPrompt) formData.append('customPrompt', data.customPrompt);
 
       return apiClient.post('/api/generate', formData, {
         headers: {
@@ -97,14 +102,19 @@ export const api = {
       const formData = new FormData();
       formData.append('prompt', data.prompt);
       formData.append('originalPrompt', data.originalPrompt);
+      formData.append('enhancePrompt', data.enhancePrompt || false);
+      formData.append('imageCount', data.imageCount || '1');
       formData.append('image', data.image);
       
-      // Add answers to form data
-      Object.entries(data.answers).forEach(([key, value]) => {
-        if (value) {
-          formData.append(key, value);
-        }
-      });
+      // Add individual answer fields
+      if (data.category) formData.append('category', data.category);
+      if (data.mood) formData.append('mood', data.mood);
+      if (data.theme) formData.append('theme', data.theme);
+      if (data.primaryColor) formData.append('primaryColor', data.primaryColor);
+      if (data.includeText) formData.append('includeText', data.includeText);
+      if (data.textStyle) formData.append('textStyle', data.textStyle);
+      if (data.thumbnailStyle) formData.append('thumbnailStyle', data.thumbnailStyle);
+      if (data.customPrompt) formData.append('customPrompt', data.customPrompt);
 
       return apiClient.post('/api/generate-from-image', formData, {
         headers: {

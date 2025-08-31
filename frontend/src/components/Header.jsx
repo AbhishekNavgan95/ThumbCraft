@@ -34,7 +34,7 @@ const Header = () => {
                 className="flex items-center text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
               >
                 <Sparkles className="w-7 h-7 text-blue-600 mr-2" />
-                ThumbnailAI
+                ThumbCraft
               </button>
             </div>
 
