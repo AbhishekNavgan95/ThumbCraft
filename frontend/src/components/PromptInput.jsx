@@ -37,6 +37,9 @@ const PromptInput = () => {
 
     setError('');
     setCurrentStep('questions');
+    
+    // Scroll to top when navigating to questions
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleBack = () => {

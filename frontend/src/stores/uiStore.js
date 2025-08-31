@@ -71,6 +71,9 @@ const useUIStore = create((set, get) => ({
     }
     
     set({ currentQuestionIndex: Math.min(nextIndex, questions.length - 1) });
+    
+    // Scroll to top when changing questions
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   },
   
   previousQuestion: () => {
@@ -84,6 +87,9 @@ const useUIStore = create((set, get) => ({
     }
     
     set({ currentQuestionIndex: Math.max(prevIndex, 0) });
+    
+    // Scroll to top when changing questions
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   },
   
   skipQuestion: () => {
@@ -91,6 +97,8 @@ const useUIStore = create((set, get) => ({
     const questions = get().questions;
     if (state.currentQuestionIndex < questions.length - 1) {
       set({ currentQuestionIndex: state.currentQuestionIndex + 1 });
+      // Scroll to top when changing questions
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       set({ currentStep: 'loading' });
     }

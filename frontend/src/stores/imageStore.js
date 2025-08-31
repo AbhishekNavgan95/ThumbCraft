@@ -8,6 +8,13 @@ const useImageStore = create((set, get) => ({
   isLoading: false,
   error: null,
   history: [],
+  historyPagination: {
+    currentPage: 1,
+    totalItems: 0,
+    totalPages: 0,
+    hasMore: false,
+    itemsPerPage: 10
+  },
   abortController: null,
   isDownloadingZip: false,
   
@@ -205,12 +212,28 @@ const useImageStore = create((set, get) => ({
     }
   },
   
-  fetchHistory: async () => {
+  fetchHistory: async (page = 1, append = false) => {
     try {
-      const response = await api.history.get();
+      const state = get();
+      const response = await api.history.get({ 
+        page, 
+        limit: state.historyPagination.itemsPerPage 
+      });
       const { data } = response;
 
-      set({ history: data.history });
+      const totalPages = Math.ceil(data.total / state.historyPagination.itemsPerPage);
+
+      set((currentState) => ({
+        history: append ? [...currentState.history, ...data.history] : data.history,
+        historyPagination: {
+          ...currentState.historyPagination,
+          currentPage: page,
+          totalItems: data.total,
+          totalPages,
+          hasMore: data.hasMore
+        }
+      }));
+      
       return { success: true };
     } catch (error) {
       set({ error: error.message || 'Failed to fetch history' });
@@ -218,12 +241,45 @@ const useImageStore = create((set, get) => ({
     }
   },
 
+  loadMoreHistory: async () => {
+    const state = get();
+    if (!state.historyPagination.hasMore) return { success: false };
+    
+    return await get().fetchHistory(state.historyPagination.currentPage + 1, true);
+  },
+
+  setHistoryPage: async (page) => {
+    const result = await get().fetchHistory(page, false);
+    
+    // Scroll to top of page when changing pages
+    if (result.success) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    return result;
+  },
+
   deleteHistoryEntry: async (historyId) => {
     try {
       await api.history.delete(historyId);
-      set((state) => ({
-        history: state.history.filter(item => item._id !== historyId)
-      }));
+      
+      // Update local state and pagination info
+      set((state) => {
+        const newHistory = state.history.filter(item => item._id !== historyId);
+        const newTotalItems = Math.max(0, state.historyPagination.totalItems - 1);
+        const newTotalPages = Math.ceil(newTotalItems / state.historyPagination.itemsPerPage);
+        
+        return {
+          history: newHistory,
+          historyPagination: {
+            ...state.historyPagination,
+            totalItems: newTotalItems,
+            totalPages: newTotalPages,
+            hasMore: state.historyPagination.currentPage < newTotalPages
+          }
+        };
+      });
+      
       return { success: true };
     } catch (error) {
       set({ error: error.message || 'Failed to delete history entry' });
@@ -234,7 +290,16 @@ const useImageStore = create((set, get) => ({
   clearHistory: async () => {
     try {
       await api.history.clear();
-      set({ history: [] });
+      set({ 
+        history: [],
+        historyPagination: {
+          currentPage: 1,
+          totalItems: 0,
+          totalPages: 0,
+          hasMore: false,
+          itemsPerPage: 10
+        }
+      });
       return { success: true };
     } catch (error) {
       set({ error: error.message || 'Failed to clear history' });

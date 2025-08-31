@@ -154,7 +154,13 @@ export const api = {
 
   // History endpoints
   history: {
-    get: () => apiClient.get('/api/history'),
+    get: (params = {}) => {
+      const { page = 1, limit = 10 } = params;
+      const offset = (page - 1) * limit;
+      return apiClient.get('/api/history', {
+        params: { limit, offset }
+      });
+    },
     delete: (historyId) => apiClient.delete(`/api/history/${historyId}`),
     clear: () => apiClient.delete('/api/history'),
   },

@@ -3,11 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import useImageStore from '../stores/imageStore';
 import useAuthStore from '../stores/authStore';
 import ImagePreviewModal from './ImagePreviewModal';
-import { Filter, SortAsc, SortDesc, Download, Eye, Archive, Calendar, Image, Type, Trash2, Search, X } from 'lucide-react';
+import { Filter, SortAsc, SortDesc, Download, Eye, Archive, Calendar, Image, Type, Trash2, Search, X, Sparkles, Hash, Camera, ArrowLeft, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
 
 const HistoryPage = () => {
   const navigate = useNavigate();
-  const { history, fetchHistory, clearHistory, deleteHistoryEntry, downloadImage, isLoading, error, clearError } = useImageStore();
+  const { 
+    history, 
+    historyPagination, 
+    fetchHistory, 
+    setHistoryPage, 
+    loadMoreHistory, 
+    clearHistory, 
+    deleteHistoryEntry, 
+    downloadImage, 
+    isLoading, 
+    error, 
+    clearError 
+  } = useImageStore();
   const { isAuthenticated } = useAuthStore();
   const [filter, setFilter] = useState('all'); // all, text-to-image, image-to-image
   const [sortBy, setSortBy] = useState('newest'); // newest, oldest
@@ -17,6 +29,7 @@ const HistoryPage = () => {
   const [previewModal, setPreviewModal] = useState({ isOpen: false, imageUrl: '', imageIndex: 0, historyItem: null });
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [isExportingZip, setIsExportingZip] = useState(false);
+  const [expandedPrompts, setExpandedPrompts] = useState(new Set());
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -166,6 +179,27 @@ const HistoryPage = () => {
     };
   };
 
+  const togglePromptExpansion = (itemId) => {
+    setExpandedPrompts(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+
+  const truncatePrompt = (text, maxLength = 100) => {
+    if (!text) return '';
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  };
+
+  const isPromptLong = (text, maxLength = 100) => {
+    return text && text.length > maxLength;
+  };
+
   if (!isAuthenticated) {
     return null;
   }
@@ -179,11 +213,9 @@ const HistoryPage = () => {
             <div>
               <button
                 onClick={() => navigate('/')}
-                className="flex items-center text-gray-600 hover:text-gray-900 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg p-2 transition-colors"
+                className="flex items-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 mb-6 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-4 py-2.5 transition-all font-medium"
               >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
+                <ArrowLeft className="w-5 h-5 mr-2" />
                 Back to Home
               </button>
               
@@ -198,7 +230,7 @@ const HistoryPage = () => {
             {/* Stats */}
             <div className="mt-6 sm:mt-0 flex items-center space-x-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{historyToShow.length}</div>
+                <div className="text-2xl font-bold text-blue-600">{historyPagination.totalItems || historyToShow.length}</div>
                 <div className="text-sm text-gray-500">Total Sessions</div>
               </div>
               <div className="text-center">
@@ -242,7 +274,7 @@ const HistoryPage = () => {
                   <select
                     value={filter}
                     onChange={(e) => setFilter(e.target.value)}
-                    className="pl-10 pr-8 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white min-w-[160px]"
+                    className="history-select pl-10 pr-8 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white min-w-[160px]"
                   >
                     <option value="all">All Types</option>
                     <option value="text-to-image">From Prompt</option>
@@ -259,10 +291,35 @@ const HistoryPage = () => {
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="pl-10 pr-8 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white min-w-[140px]"
+                    className="history-select pl-10 pr-8 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white min-w-[140px]"
                   >
                     <option value="newest">Newest First</option>
                     <option value="oldest">Oldest First</option>
+                  </select>
+                </div>
+
+                <div className="relative">
+                  <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <select
+                    value={historyPagination.itemsPerPage}
+                    onChange={async (e) => {
+                      const newLimit = parseInt(e.target.value);
+                      // Update items per page and reset to page 1
+                      await useImageStore.setState((state) => ({
+                        historyPagination: {
+                          ...state.historyPagination,
+                          itemsPerPage: newLimit,
+                          currentPage: 1
+                        }
+                      }));
+                      fetchHistory(1);
+                    }}
+                    className="history-select pl-10 pr-8 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white min-w-[120px]"
+                  >
+                    <option value="5">5 per page</option>
+                    <option value="10">10 per page</option>
+                    <option value="20">20 per page</option>
+                    <option value="50">50 per page</option>
                   </select>
                 </div>
               </div>
@@ -384,69 +441,126 @@ const HistoryPage = () => {
 
         {/* History Grid */}
         {!isLoading && sortedHistory.length > 0 && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {sortedHistory.map((item) => (
-              <div key={item._id} className="bg-white rounded-xl shadow-lg overflow-hidden">
-                <div className="p-6">
-                  {/* Header */}
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-6">
+              <div key={item._id} className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100">
+                {/* Card Header */}
+                <div className="px-8 py-6 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
+                  <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-4 flex-1">
                       <input
                         type="checkbox"
                         checked={selectedItems.has(item._id)}
                         onChange={() => handleSelectItem(item._id)}
-                        className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1"
+                        className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mt-1"
                       />
                       
-                      <div className="flex-1">
-                        <div className="flex items-center mb-3">
-                          <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                      <div className="flex-1 space-y-3">
+                        {/* Type and Enhancement Badges */}
+                        <div className="flex items-center space-x-3">
+                          <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold ${
+                            item.type === 'image-to-image' 
+                              ? 'bg-purple-100 text-purple-800' 
+                              : 'bg-blue-100 text-blue-800'
+                          }`}>
                             {item.type === 'image-to-image' ? (
-                              <span className="flex items-center">
-                                <Image className="w-4 h-4 mr-1" />
-                                From Image
-                              </span>
+                              <>
+                                <Camera className="w-4 h-4 mr-1.5" />
+                                Image to Image
+                              </>
                             ) : (
-                              <span className="flex items-center">
-                                <Type className="w-4 h-4 mr-1" />
-                                From Prompt
-                              </span>
+                              <>
+                                <Type className="w-4 h-4 mr-1.5" />
+                                Text to Image
+                              </>
                             )}
                           </span>
+                          
                           {item.enhancedPrompt && (
-                            <span className="ml-3 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                              ✨ AI Enhanced
+                            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold bg-gradient-to-r from-violet-100 to-purple-100 text-violet-800">
+                              <Sparkles className="w-4 h-4 mr-1.5" />
+                              AI Enhanced
                             </span>
+                          )}
+                          
+                          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold bg-green-100 text-green-800">
+                            <Hash className="w-4 h-4 mr-1.5" />
+                            {item.imageUrls?.length || 0} Generated
+                          </span>
+                          
+                          <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold ${
+                            item.includeText ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            Text: {item.includeText ? 'Yes' : 'No'}
+                          </span>
+                        </div>
+                        
+                        {/* Original Prompt */}
+                        <div className="space-y-2">
+                          <div>
+                            <h3 className="text-lg font-medium text-gray-900 leading-tight">
+                              {expandedPrompts.has(item._id) 
+                                ? item.originalPrompt || 'No prompt provided'
+                                : truncatePrompt(item.originalPrompt || 'No prompt provided')
+                              }
+                            </h3>
+                            {isPromptLong(item.originalPrompt) && (
+                              <button
+                                onClick={() => togglePromptExpansion(item._id)}
+                                className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium focus:outline-none focus:underline transition-colors"
+                              >
+                                {expandedPrompts.has(item._id) ? 'Show less' : 'Read more'}
+                              </button>
+                            )}
+                          </div>
+                          
+                          {/* Final Prompt (if different from original) */}
+                          {item.finalPrompt && item.finalPrompt !== item.originalPrompt && (
+                            <div className="">
+                              <div className="flex items-start space-x-2">
+                                <div className="flex-1">  
+                                  <p className="text-sm font-medium text-blue-900 mb-1">Enhanced Prompt:</p>
+                                  <p className="text-base text-blue-800 leading-relaxed">
+                                    {expandedPrompts.has(`final-${item._id}`)
+                                      ? item.finalPrompt
+                                      : truncatePrompt(item.finalPrompt, 150)
+                                    }
+                                  </p>
+                                  {isPromptLong(item.finalPrompt, 150) && (
+                                    <button
+                                      onClick={() => togglePromptExpansion(`final-${item._id}`)}
+                                      className="mt-2 text-xs text-blue-700 hover:text-blue-900 font-medium focus:outline-none focus:underline transition-colors"
+                                    >
+                                      {expandedPrompts.has(`final-${item._id}`) ? 'Show less' : 'Read more'}
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
                           )}
                         </div>
                         
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2 leading-tight">
-                          {item.originalPrompt || item.customPrompt || 'No prompt provided'}
-                        </h3>
-                        
-                        <div className="flex items-center text-sm text-gray-600 space-x-4">
+                        {/* Meta Information */}
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                           <span className="flex items-center">
-                            <Calendar className="w-4 h-4 mr-1" />
+                            <Calendar className="w-4 h-4 mr-1.5" />
                             {formatDate(item.createdAt)}
                           </span>
-                          {item.inputImage && (
-                            <span className="flex items-center">
-                              <Image className="w-4 h-4 mr-1" />
-                              {item.inputImage.originalName} ({Math.round(item.inputImage.size / 1024)}KB)
-                            </span>
-                          )}
+                          
+                          <span className="flex items-center">
+                            <Hash className="w-4 h-4 mr-1.5" />
+                            {item.imagesGenerated || item.imageUrls?.length || 0} images generated
+                          </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="mt-4 sm:mt-0 sm:ml-6 flex items-center space-x-3">
-                      <span className="inline-flex items-center px-3 py-2 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                        {item.imageUrls?.length || 0} images
-                      </span>
+                    {/* Actions */}
+                    <div className="flex items-center space-x-2 ml-6">
                       <button
                         onClick={() => handleDeleteHistoryEntry(item._id)}
                         disabled={deletingId === item._id}
-                        className="text-red-500 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 rounded-lg p-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 rounded-lg p-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         title="Delete this generation"
                       >
                         {deletingId === item._id ? (
@@ -460,79 +574,69 @@ const HistoryPage = () => {
                       </button>
                     </div>
                   </div>
+                </div>
 
-                  {/* Settings Summary */}
-                  {(() => {
-                    const answers = buildAnswersObject(item);
-                    return Object.values(answers).some(answer => answer) && (
-                      <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                        <h4 className="text-sm font-medium text-gray-900 mb-3">Settings Used:</h4>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                          {Object.entries(answers).map(([key, value]) => {
-                            if (!value) return null;
-                            const displayValue = typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value;
-                            return (
-                              <div key={key}>
-                                <span className="text-gray-600 capitalize">
-                                  {key.replace(/([A-Z])/g, ' $1').trim()}:
-                                </span>
-                                <span className="ml-2 font-medium text-gray-900">{displayValue}</span>
+                {/* Card Body */}
+                <div className="px-8 py-6">
+                  {/* Generated Images */}
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-semibold text-gray-900 flex items-center">
+                      <Image className="w-5 h-5 mr-2 text-indigo-600" />
+                      Generated Thumbnails ({item.imageUrls?.length || 0})
+                    </h4>
+                    
+                    <div className={`grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`}>
+                      {item.imageUrls?.map((imageUrl, index) => (
+                        <div key={index} className="group relative bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200">
+                          <div className="aspect-video">
+                            <img
+                              src={imageUrl}
+                              alt={`Generated thumbnail ${index + 1}`}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              onError={(e) => {
+                                e.target.src = `https://via.placeholder.com/400x225/6366f1/ffffff?text=Thumbnail+${index + 1}`;
+                              }}
+                            />
+                          </div>
+                          
+                          {/* Hover Overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+                              <span className="text-white text-sm font-medium">Thumbnail #{index + 1}</span>
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => handlePreview(imageUrl, index, item)}
+                                  className="bg-white/90 hover:bg-white text-gray-900 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-white transition-all transform hover:scale-110 shadow-lg"
+                                  title="Preview image"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => downloadImage(imageUrl, `thumbnail-${item._id}-${index + 1}.png`)}
+                                  className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all transform hover:scale-110 shadow-lg"
+                                  title="Download image"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </button>
                               </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })()}
+                            </div>
+                          </div>
 
-                  {/* Images Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {item.imageUrls?.map((imageUrl, index) => (
-                      <div key={index} className="group relative bg-gray-50 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
-                        <img
-                          src={imageUrl}
-                          alt={`Thumbnail ${index + 1}`}
-                          className="w-full h-40 object-cover"
-                          onError={(e) => {
-                            e.target.src = `https://via.placeholder.com/320x180/6EE7B7/ffffff?text=Thumb+${index + 1}`;
-                          }}
-                        />
-                        
-                        {/* Overlay with actions */}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => handlePreview(imageUrl, index, item)}
-                              className="bg-white/90 hover:bg-white text-gray-900 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-black shadow-lg transition-all transform hover:scale-105"
-                              title="Preview image"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => downloadImage(imageUrl, `thumbnail-${item._id}-${index + 1}.png`)}
-                              className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-black shadow-lg transition-all transform hover:scale-105"
-                              title="Download image"
-                            >
-                              <Download className="w-4 h-4" />
-                            </button>
+                          {/* Corner Badges */}
+                          <div className="absolute top-3 left-3">
+                            <span className="bg-black/80 text-white text-xs font-bold px-2.5 py-1 rounded-full border border-white/20">
+                              #{index + 1}
+                            </span>
+                          </div>
+
+                          <div className="absolute top-3 right-3">
+                            <span className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                              HD
+                            </span>
                           </div>
                         </div>
-
-                        {/* Image number badge */}
-                        <div className="absolute top-2 left-2">
-                          <span className="bg-black/70 text-white text-xs font-semibold px-2 py-1 rounded-full">
-                            {index + 1}
-                          </span>
-                        </div>
-
-                        {/* Quality badge */}
-                        <div className="absolute top-2 right-2">
-                          <span className="bg-blue-600 text-white text-xs font-semibold px-2 py-1 rounded-full">
-                            HD
-                          </span>
-                        </div>
-                      </div>
-                    )) || []}
+                      )) || []}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -540,17 +644,135 @@ const HistoryPage = () => {
           </div>
         )}
 
+        {/* Pagination Controls */}
+        {!isLoading && sortedHistory.length > 0 && historyPagination.totalPages > 1 && (
+          <div className="mt-12 flex items-center justify-between">
+            <div className="text-sm text-gray-700">
+              Showing <span className="font-medium">{((historyPagination.currentPage - 1) * historyPagination.itemsPerPage) + 1}</span> to{' '}
+              <span className="font-medium">
+                {Math.min(historyPagination.currentPage * historyPagination.itemsPerPage, historyPagination.totalItems)}
+              </span> of{' '}
+              <span className="font-medium">{historyPagination.totalItems}</span> results
+            </div>
+
+            <div className="flex items-center space-x-2">
+              {/* Previous Button */}
+              <button
+                onClick={() => setHistoryPage(historyPagination.currentPage - 1)}
+                disabled={historyPagination.currentPage === 1}
+                className="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Previous
+              </button>
+
+              {/* Page Numbers */}
+              <div className="flex items-center space-x-1">
+                {(() => {
+                  const pages = [];
+                  const currentPage = historyPagination.currentPage;
+                  const totalPages = historyPagination.totalPages;
+                  
+                  // Always show first page
+                  if (totalPages > 0) {
+                    pages.push(
+                      <button
+                        key={1}
+                        onClick={() => setHistoryPage(1)}
+                        className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg focus:z-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                          currentPage === 1
+                            ? 'bg-blue-600 text-white border border-blue-600'
+                            : 'text-gray-900 bg-white border border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        1
+                      </button>
+                    );
+                  }
+
+                  // Show dots if there's a gap
+                  if (currentPage > 4 && totalPages > 7) {
+                    pages.push(
+                      <span key="dots1" className="px-2 text-gray-500">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </span>
+                    );
+                  }
+
+                  // Show pages around current page
+                  const startPage = Math.max(2, currentPage - 2);
+                  const endPage = Math.min(totalPages - 1, currentPage + 2);
+
+                  for (let i = startPage; i <= endPage; i++) {
+                    pages.push(
+                      <button
+                        key={i}
+                        onClick={() => setHistoryPage(i)}
+                        className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg focus:z-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                          currentPage === i
+                            ? 'bg-blue-600 text-white border border-blue-600'
+                            : 'text-gray-900 bg-white border border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        {i}
+                      </button>
+                    );
+                  }
+
+                  // Show dots if there's a gap
+                  if (currentPage < totalPages - 3 && totalPages > 7) {
+                    pages.push(
+                      <span key="dots2" className="px-2 text-gray-500">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </span>
+                    );
+                  }
+
+                  // Always show last page
+                  if (totalPages > 1) {
+                    pages.push(
+                      <button
+                        key={totalPages}
+                        onClick={() => setHistoryPage(totalPages)}
+                        className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg focus:z-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                          currentPage === totalPages
+                            ? 'bg-blue-600 text-white border border-blue-600'
+                            : 'text-gray-900 bg-white border border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        {totalPages}
+                      </button>
+                    );
+                  }
+
+                  return pages;
+                })()}
+              </div>
+
+              {/* Next Button */}
+              <button
+                onClick={() => setHistoryPage(historyPagination.currentPage + 1)}
+                disabled={historyPagination.currentPage === historyPagination.totalPages}
+                className="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Clear History Confirmation Modal */}
         {showConfirmClear && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+          <div onClick={() => setShowConfirmClear(false)} className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div onClick={(e) => e.stopPropagation()} className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
               <div className="flex items-center mb-4">
                 <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-3">
                   <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.864-.833-2.598 0L3.216 16.5c-.77.833.192 2.5 1.732 2.5z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">Clear All History</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Clear All History (disabled on purpose)</h3>
               </div>
               
               <p className="text-gray-600 mb-6">
@@ -568,7 +790,7 @@ const HistoryPage = () => {
                 <button
                   onClick={handleClearHistory}
                   className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={isLoading}
+                  disabled={true}
                 >
                   {isLoading ? 'Clearing...' : 'Clear All'}
                 </button>
