@@ -67,6 +67,10 @@ const LoginModal = ({ isOpen, onClose }) => {
           </button>
         </div>
 
+        <div className="mx-6 text-sm   text-center py-1 bg-amber-100 border border-amber-200 rounded-lg">
+          <p>Render pe hosted hai bhot ager response time slow hoga to thoda sa wait kar lena 🙏🙏</p>
+        </div>
+
         <form onSubmit={handleSubmit} className="p-6">
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
