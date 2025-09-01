@@ -35,7 +35,7 @@ const Gallery = () => {
 
   const downloadImage = (imageName) => {
     const link = document.createElement('a');
-    link.href = `/src/assets/gallary/${imageName}`;
+    link.href = `/gallery/${imageName}`;
     link.download = imageName;
     document.body.appendChild(link);
     link.click();
@@ -70,7 +70,7 @@ const Gallery = () => {
               onClick={() => openModal(image)}
             >
               <img
-                src={`/src/assets/gallary/${image}`}
+                src={`/gallery/${image}`}
                 alt={`AI Generated Thumbnail ${index + 1}`}
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                 loading="lazy"
@@ -127,7 +127,7 @@ const Gallery = () => {
         >
           <div className="relative max-w-4xl max-h-[90vh] bg-white rounded-2xl overflow-hidden shadow-2xl">
             <img
-              src={`/src/assets/gallary/${selectedImage}`}
+              src={`/gallery/${selectedImage}`}
               alt="Full size thumbnail"
               className="w-full h-full object-contain"
             />
