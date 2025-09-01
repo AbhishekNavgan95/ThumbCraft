@@ -1,11 +1,6 @@
    # AI Thumbnail Generator
 
    > **Demo Credentials**
-   > 
-   > Email: `navganabhishek90@gmail.com`
-   > 
-   > Password: `Abhi@1212`
-   >
    > **Live Demo:** [https://thumbcraft.abhisheknavgan.xyz/](https://thumbcraft.abhisheknavgan.xyz/)
 
    A full-stack web application for generating high-quality, YouTube-ready thumbnails using AI. Supports both text-to-image and image-to-image workflows, advanced filtering, OpenAI-powered prompt enhancement, Cloudinary image hosting, and complete user generation history.
