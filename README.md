@@ -1,9 +1,10 @@
-   # AI Thumbnail Generator
+# AI Thumbnail Generator
 
-   > **Demo Credentials**
-   > **Live Demo:** [https://thumbcraft.abhisheknavgan.xyz/](https://thumbcraft.abhisheknavgan.xyz/)
+A full-stack web application for generating high-quality, YouTube-ready thumbnails using AI. Supports both text-to-image and image-to-image workflows, advanced filtering, OpenAI-powered prompt enhancement, Cloudinary image hosting, and complete user generation history.
 
-   A full-stack web application for generating high-quality, YouTube-ready thumbnails using AI. Supports both text-to-image and image-to-image workflows, advanced filtering, OpenAI-powered prompt enhancement, Cloudinary image hosting, and complete user generation history.
+**Live Demo:** [https://thumbcraft.abhisheknavgan.xyz/](https://thumbcraft.abhisheknavgan.xyz/)
+**Demo video:** [https://x.com/Abhishe57977667/status/1962400310930120897/](https://x.com/Abhishe57977667/status/1962400310930120897)
+
 
    ---
 
