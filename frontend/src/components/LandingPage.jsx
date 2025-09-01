@@ -1,5 +1,6 @@
 import useUIStore from '../stores/uiStore';
 import useAuthStore from '../stores/authStore';
+import Gallery from './Gallery';
 import { 
   Sparkles,
   Edit3,
@@ -14,7 +15,14 @@ const LandingPage = () => {
   const handleOptionSelect = (mode) => {
     if (!isAuthenticated) {
       setGenerationMode(mode);
-      openLoginModal();
+      // Show toast instead of opening login modal
+      useUIStore.getState().showToast(
+        'Signups Temporarily Disabled',
+        'We\'re currently not accepting new signups while we improve the platform. Check out our demo video to see ThumbCraft in action!',
+        'warning',
+        true,
+        7000
+      );
       return;
     }
     
@@ -106,11 +114,28 @@ const LandingPage = () => {
             </div>
           </div>
 
+          
+          {/* Quick Stats */}
+          <div className="mt-16 flex flex-wrap items-center justify-center gap-8 text-sm text-gray-600">
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+              <span>Generate in 30 seconds</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-blue-400 rounded-full mr-2"></div>
+              <span>Up to 4 variations</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-purple-400 rounded-full mr-2"></div>
+              <span>HD quality downloads</span>
+            </div>
+          </div>
+
           {/* Twitter Embed Section */}
           <div className="mt-20 mb-16">
             <div className="text-center mb-8">
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-                Featured on Chai aur Code
+                Featured on <span className='bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'>Chai aur Code</span>
               </h2>
               <p className="text-gray-600 text-lg max-w-2xl mx-auto">
                 Our AI thumbnail generator caught the attention of the developer community
@@ -135,21 +160,8 @@ const LandingPage = () => {
             </div>
           </div>
 
-          {/* Quick Stats */}
-          <div className="mt-16 flex flex-wrap items-center justify-center gap-8 text-sm text-gray-600">
-            <div className="flex items-center">
-              <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
-              <span>Generate in 30 seconds</span>
-            </div>
-            <div className="flex items-center">
-              <div className="w-2 h-2 bg-blue-400 rounded-full mr-2"></div>
-              <span>Up to 4 variations</span>
-            </div>
-            <div className="flex items-center">
-              <div className="w-2 h-2 bg-purple-400 rounded-full mr-2"></div>
-              <span>HD quality downloads</span>
-            </div>
-          </div>
+          {/* Gallery Section */}
+          <Gallery />
         </div>
       </div>
     </div>

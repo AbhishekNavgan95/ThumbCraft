@@ -30,6 +30,16 @@ const useUIStore = create((set, get) => ({
   // Modal states
   isLoginModalOpen: false,
   
+  // Toast state
+  toast: {
+    show: false,
+    title: '',
+    message: '',
+    type: 'info', // info, success, warning, error
+    autoHide: true,
+    duration: 5000
+  },
+  
   // Loading states
   isGenerating: false,
   
@@ -107,6 +117,28 @@ const useUIStore = create((set, get) => ({
   openLoginModal: () => set({ isLoginModalOpen: true }),
   
   closeLoginModal: () => set({ isLoginModalOpen: false }),
+  
+  showToast: (title, message, type = 'info', autoHide = true, duration = 5000) => set({
+    toast: {
+      show: true,
+      title,
+      message,
+      type,
+      autoHide,
+      duration
+    }
+  }),
+  
+  hideToast: () => set({
+    toast: {
+      show: false,
+      title: '',
+      message: '',
+      type: 'info',
+      autoHide: true,
+      duration: 5000
+    }
+  }),
   
   startGeneration: () => set({ 
     isGenerating: true, 
