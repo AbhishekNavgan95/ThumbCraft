@@ -106,6 +106,35 @@ const LandingPage = () => {
             </div>
           </div>
 
+          {/* Twitter Embed Section */}
+          <div className="mt-20 mb-16">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+                Featured on Chai aur Code
+              </h2>
+              <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+                Our AI thumbnail generator caught the attention of the developer community
+              </p>
+            </div>
+            
+            <div className="flex justify-center">
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 p-6  max-w-xl">
+                <blockquote className="twitter-tweet" data-theme="light" data-conversation="none">
+                  <p lang="en" dir="ltr">
+                    Fun Weekend, Built an AI-powered thumbnail generator using Google's Nano Banana (Gemini 2.5 Flash).<br/><br/>
+                    Got featured on Chai aur Code, gained $8 Google debt, and survived a couple of sleepless nights. Worth it.
+                    <a href="https://twitter.com/ChaiCodeHQ?ref_src=twsrc%5Etfw">@ChaiCodeHQ</a> 
+                    <a href="https://twitter.com/Hiteshdotcom?ref_src=twsrc%5Etfw">@Hiteshdotcom</a> 
+                    <a href="https://twitter.com/piyushgarg_dev?ref_src=twsrc%5Etfw">@piyushgarg_dev</a> 
+                    <a href="https://t.co/sbcgBcPSWq">pic.twitter.com/sbcgBcPSWq</a>
+                  </p>
+                  &mdash; Abhishek Navgan (@Abhishe57977667) 
+                  <a href="https://twitter.com/Abhishe57977667/status/1962400310930120897?ref_src=twsrc%5Etfw">September 1, 2025</a>
+                </blockquote>
+              </div>
+            </div>
+          </div>
+
           {/* Quick Stats */}
           <div className="mt-16 flex flex-wrap items-center justify-center gap-8 text-sm text-gray-600">
             <div className="flex items-center">
