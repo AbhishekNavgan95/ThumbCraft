@@ -6,7 +6,7 @@ import Header from './components/Header';
 import Homepage from './components/Homepage';
 import HistoryPage from './components/HistoryPage';
 import Footer from './components/Footer';
-import ServerWarmupModal from './components/ServerWarmupModal';
+import ServerWarmupToast from './components/ServerWarmupToast';
 import Toast from './components/Toast';
 
 function App() {
@@ -75,8 +75,8 @@ function App() {
         </main>
         <Footer />
 
-        {/* Server Warmup Modal */}
-        <ServerWarmupModal
+        {/* Server Warmup Toast */}
+        <ServerWarmupToast
           isOpen={showWarmupModal}
           onClose={() => setShowWarmupModal(false)}
           serverReady={serverReady}
