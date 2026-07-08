@@ -1,4 +1,4 @@
-# Thumbcrft — Platform Architecture
+# thumbcraft — Platform Architecture
 
 A distributed AI thumbnail generation platform built to learn microservices, event-driven architecture, and cloud-native deployment at scale.
 
@@ -463,7 +463,7 @@ Every event includes:
 ## Monorepo Structure
 
 ```
-thumbcrft/
+thumbcraft/
 ├── pnpm-workspace.yaml
 ├── package.json
 ├── docker-compose.yml

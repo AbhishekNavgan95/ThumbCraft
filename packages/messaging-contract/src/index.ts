@@ -1,0 +1,59 @@
+/** RabbitMQ exchange for all platform events. */
+export const PLATFORM_EXCHANGE = "platform.events" as const;
+
+/** Routing key format: `{domain}.{action}` */
+export const RoutingKeys = {
+  USER_REGISTERED: "user.registered",
+  GENERATION_REQUESTED: "generation.requested",
+  GENERATION_COMPLETED: "generation.completed",
+  GENERATION_FAILED: "generation.failed",
+  WALLET_PURCHASE_COMPLETED: "wallet.purchase_completed",
+} as const;
+
+export type RoutingKey = (typeof RoutingKeys)[keyof typeof RoutingKeys];
+
+/** Base envelope included on every published event. */
+export interface PlatformEvent<TPayload = Record<string, unknown>> {
+  eventId: string;
+  correlationId: string;
+  timestamp: string;
+  userId: string;
+  jobId?: string;
+  payload: TPayload;
+}
+
+export interface UserRegisteredPayload {
+  email: string;
+  name: string;
+}
+
+export interface GenerationRequestedPayload {
+  modelId: string;
+  type: "text-to-image" | "image-to-image";
+  prompt: string;
+  filters: Record<string, unknown>;
+  inputImageUrl?: string;
+  enhancePrompt: boolean;
+  coinCost: number;
+}
+
+export interface GenerationCompletedPayload {
+  imageUrls: string[];
+}
+
+export interface GenerationFailedPayload {
+  error: string;
+}
+
+export interface WalletPurchaseCompletedPayload {
+  coins: number;
+  stripePaymentId: string;
+}
+
+export const Queues = {
+  WALLET_EVENTS: "wallet.events",
+  GENERATION_WORKER: "generation.worker",
+  NOTIFICATION_EVENTS: "notification.events",
+} as const;
+
+export type QueueName = (typeof Queues)[keyof typeof Queues];

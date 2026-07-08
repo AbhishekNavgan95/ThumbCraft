@@ -1,0 +1,25 @@
+{
+  "name": "@thumbcraft/api-gateway",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@platform/config": "workspace:*",
+    "@platform/errors": "workspace:*",
+    "@platform/logger": "workspace:*",
+    "@platform/messaging-contract": "workspace:*",
+    "@platform/rabbitmq-client": "workspace:*",
+    "fastify": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}
