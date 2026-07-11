@@ -222,7 +222,7 @@ Single public entry point for all client traffic.
 - JWT validation (local verify with shared secret/public key from Auth Service)
 - Proxy auth routes to Auth Service
 - `POST /generations` — quote → reserve coins → create job on worker → publish event → `202 { jobId }` (with compensation on partial failure)
-- `POST /generations/from-image` — upload base image to Cloudinary, then same submit flow
+- `POST /generations/from-image` — upload base image to S3, then same submit flow
 - `GET /generations/:id` — **read proxy** to Generation Worker `GET /internal/jobs/:id` (no local job storage)
 - `GET /history` — proxy to Generation Worker
 - Wallet proxy routes (`/wallet`, `/wallet/checkout`, `/models`)
@@ -281,7 +281,7 @@ All internal endpoints verify `userId` from gateway-forwarded header (e.g. `X-Us
 3. Build structured prompt from job payload (port logic from current `imageController.js`)
 4. Optional OpenAI prompt enhancement if requested (cost included in reserve)
 5. Generate images via selected provider
-6. Upload results to Cloudinary
+6. Upload results to S3
 7. Save `image_urls`, set status → `completed`
 8. Publish `generation.completed` — or `generation.failed` on error
 
@@ -298,7 +298,7 @@ Adding a new model = implement adapter + add row to `wallet_db.model_pricing`. N
 Port from current monolith:
 - `backend/utils/imageGenerator.js` → Gemini adapters
 - `backend/utils/promptEnhancer.js` → shared enhance step
-- `backend/utils/cloudinaryUpload.js` → upload step
+- `backend/utils/cloudinaryUpload.js` → S3 upload step (replace Cloudinary with `@aws-sdk/client-s3`)
 - `backend/controllers/imageController.js` → prompt building logic
 
 ---
@@ -385,7 +385,7 @@ Transactional email. Queue-driven — no public API. Demonstrates a pure event c
    → Gateway proxies to worker GET /internal/jobs/:id
    → returns { status: "queued" | "processing" | … }
 
-5. Worker consumes event → processing → AI gen → Cloudinary → completed
+5. Worker consumes event → processing → AI gen → S3 → completed
    → publishes generation.completed or generation.failed
 
 6. Wallet Service: capture or release reserved coins
@@ -546,7 +546,7 @@ Production: isolated database instances per service.
 | Auth | JWT (Auth Service) |
 | Prompt enhancement | OpenAI |
 | Image generation | Gemini, OpenAI (model adapters in worker) |
-| Image hosting | Cloudinary |
+| Image hosting | Amazon S3 (optional CloudFront CDN) |
 | Payments | Stripe Checkout + webhooks |
 | Email | Mailhog (dev), Resend/SendGrid (prod) |
 | Containers | Docker |
@@ -639,7 +639,7 @@ Same `correlationId` from HTTP request through all async events.
 | Client polling | Frontend polls gateway, not worker directly | Worker has no public API; gateway is sole client entry point |
 | Exchange type | Topic | Flexible routing as consumers are added |
 | Auth validation | Local JWT verify at gateway | No per-request auth round-trip |
-| Image upload | Gateway uploads to Cloudinary, passes URL in event | Workers stay stateless and scalable |
+| Image upload | Gateway uploads to S3, passes object URL in event | Workers stay stateless and scalable |
 | New image model | Adapter in worker + row in model_pricing | Extend without new services |
 | RabbitMQ topology | Bootstrap script in dev; K8s Job in prod | Reproducible infrastructure |
 
@@ -654,7 +654,7 @@ The current monolith (`backend/` + `frontend/`) is reference code to port — no
 | `backend/routes/auth.js`, `models/User.js` | auth-service |
 | `backend/utils/promptEnhancer.js` | generation-worker |
 | `backend/utils/imageGenerator.js` | generation-worker (Gemini adapters) |
-| `backend/utils/cloudinaryUpload.js` | generation-worker |
+| `backend/utils/cloudinaryUpload.js` | generation-worker (port to S3 upload utility) |
 | `backend/controllers/imageController.js` | generation-worker (prompt building) |
 | `frontend/src/**` | web (add model toggle + async polling) |
 

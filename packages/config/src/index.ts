@@ -1,4 +1,7 @@
+import { config as loadDotenv } from "dotenv";
 import { z } from "zod";
+
+loadDotenv();
 
 export function loadConfig<T extends z.ZodTypeAny>(
   schema: T,
