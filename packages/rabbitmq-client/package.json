@@ -14,7 +14,7 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
     "@platform/messaging-contract": "workspace:*",

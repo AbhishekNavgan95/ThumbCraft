@@ -4,10 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "postinstall": "prisma generate",
+    "dev": "prisma generate && tsx watch --clear-screen=false --exclude \"../../packages/**\" src/index.ts",
+    "build": "prisma generate && tsc",
     "start": "node dist/index.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "prisma generate && tsc --noEmit",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:reset": "prisma migrate reset --force",
+    "db:push": "prisma db push",
+    "db:deploy": "prisma migrate deploy"
   },
   "dependencies": {
     "@platform/config": "workspace:*",
@@ -15,10 +21,16 @@
     "@platform/logger": "workspace:*",
     "@platform/messaging-contract": "workspace:*",
     "@platform/rabbitmq-client": "workspace:*",
-    "fastify": "^5.2.1"
+    "@prisma/client": "^6.2.1",
+    "bcryptjs": "^2.4.3",
+    "fastify": "^5.2.1",
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.10.5",
+    "prisma": "^6.2.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   }

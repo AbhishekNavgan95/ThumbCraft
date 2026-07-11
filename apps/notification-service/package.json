@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch --clear-screen=false --exclude \"../../packages/**\" src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit"
@@ -14,7 +14,8 @@
     "@platform/errors": "workspace:*",
     "@platform/logger": "workspace:*",
     "@platform/messaging-contract": "workspace:*",
-    "@platform/rabbitmq-client": "workspace:*"
+    "@platform/rabbitmq-client": "workspace:*",
+    "fastify": "^5.2.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",

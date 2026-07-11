@@ -3,7 +3,9 @@
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "dev": "pnpm -r --parallel dev",
+    "dev": "pnpm --filter \"./packages/*\" build && pnpm --filter \"./apps/*\" --parallel dev",
+    "dev:watch": "pnpm -r --parallel dev",
+    "dev:stop": "node infra/scripts/kill-dev-ports.mjs",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",

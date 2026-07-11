@@ -4,6 +4,7 @@ export const PLATFORM_EXCHANGE = "platform.events" as const;
 /** Routing key format: `{domain}.{action}` */
 export const RoutingKeys = {
   USER_REGISTERED: "user.registered",
+  AUTH_OTP_REQUESTED: "auth.otp_requested",
   GENERATION_REQUESTED: "generation.requested",
   GENERATION_COMPLETED: "generation.completed",
   GENERATION_FAILED: "generation.failed",
@@ -25,6 +26,13 @@ export interface PlatformEvent<TPayload = Record<string, unknown>> {
 export interface UserRegisteredPayload {
   email: string;
   name: string;
+}
+
+export interface AuthOtpRequestedPayload {
+  email: string;
+  name: string;
+  otp: string;
+  expiresAt: string;
 }
 
 export interface GenerationRequestedPayload {

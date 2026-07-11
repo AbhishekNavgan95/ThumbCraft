@@ -16,7 +16,12 @@ const bindings = [
   { queue: "generation.worker", keys: ["generation.requested"] },
   {
     queue: "notification.events",
-    keys: ["generation.completed", "generation.failed", "wallet.purchase_completed"],
+    keys: [
+      "auth.otp_requested",
+      "generation.completed",
+      "generation.failed",
+      "wallet.purchase_completed",
+    ],
   },
 ];
 

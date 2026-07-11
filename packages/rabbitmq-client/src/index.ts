@@ -31,6 +31,37 @@ export class RabbitMQClient {
     });
   }
 
+  async consume<TPayload>(
+    queue: string,
+    handler: (event: PlatformEvent<TPayload>) => Promise<void>,
+    routingKeys: string[] = [],
+  ): Promise<void> {
+    if (!this.channel) {
+      throw new Error("RabbitMQ client is not connected");
+    }
+
+    await this.channel.assertQueue(queue, { durable: true });
+    for (const routingKey of routingKeys) {
+      await this.channel.bindQueue(queue, PLATFORM_EXCHANGE, routingKey);
+    }
+
+    await this.channel.consume(queue, (message) => {
+      if (!message || !this.channel) {
+        return;
+      }
+
+      void (async () => {
+        try {
+          const event = JSON.parse(message.content.toString()) as PlatformEvent<TPayload>;
+          await handler(event);
+          this.channel?.ack(message);
+        } catch {
+          this.channel?.nack(message, false, false);
+        }
+      })();
+    });
+  }
+
   async close(): Promise<void> {
     await this.channel?.close();
     await this.connection?.close();
