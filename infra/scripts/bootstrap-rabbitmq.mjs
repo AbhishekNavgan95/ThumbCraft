@@ -18,6 +18,7 @@ const bindings = [
     queue: "notification.events",
     keys: [
       "auth.otp_requested",
+      "user.registered",
       "generation.completed",
       "generation.failed",
       "wallet.purchase_completed",

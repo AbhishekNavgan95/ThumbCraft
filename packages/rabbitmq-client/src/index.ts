@@ -33,7 +33,7 @@ export class RabbitMQClient {
 
   async consume<TPayload>(
     queue: string,
-    handler: (event: PlatformEvent<TPayload>) => Promise<void>,
+    handler: (event: PlatformEvent<TPayload>, routingKey: string) => Promise<void>,
     routingKeys: string[] = [],
   ): Promise<void> {
     if (!this.channel) {
@@ -53,7 +53,7 @@ export class RabbitMQClient {
       void (async () => {
         try {
           const event = JSON.parse(message.content.toString()) as PlatformEvent<TPayload>;
-          await handler(event);
+          await handler(event, message.fields.routingKey);
           this.channel?.ack(message);
         } catch {
           this.channel?.nack(message, false, false);
