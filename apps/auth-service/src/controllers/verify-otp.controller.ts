@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "../generated/prisma/client.js";
 import { AppError } from "@platform/errors";
 import type { RabbitMQClient } from "@platform/rabbitmq-client";
 import {

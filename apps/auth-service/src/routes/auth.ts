@@ -1,8 +1,12 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "../generated/prisma/client.js";
 import type { RabbitMQClient } from "@platform/rabbitmq-client";
 import type { AuthServiceConfig } from "../config.js";
+import {
+  registerAdmin,
+  validateAdminRegisterInput,
+} from "../controllers/admin-register.controller.js";
 import { login, validateLoginInput } from "../controllers/login.controller.js";
 import { getProfile } from "../controllers/profile.controller.js";
 import { signup, validateSignupInput } from "../controllers/signup.controller.js";
@@ -34,6 +38,32 @@ export async function registerAuthRoutes(
 
     validateSignupInput(input);
     const result = await signup(
+      prisma,
+      rabbitmq,
+      config,
+      input,
+      request.correlationId ?? randomUUID(),
+    );
+
+    return reply.status(201).send(result);
+  });
+
+  app.post("/api/admin/register", async (request, reply) => {
+    const body = request.body as {
+      name?: string;
+      email?: string;
+      password?: string;
+      inviteSecret?: string;
+    };
+    const input = {
+      name: body.name ?? "",
+      email: body.email ?? "",
+      password: body.password ?? "",
+      inviteSecret: body.inviteSecret ?? "",
+    };
+
+    validateAdminRegisterInput(input);
+    const result = await registerAdmin(
       prisma,
       rabbitmq,
       config,

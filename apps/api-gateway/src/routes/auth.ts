@@ -32,6 +32,19 @@ export async function registerAuthRoutes(
     return reply.status(result.status).send(result.body);
   });
 
+  app.post("/api/admin/register", async (request, reply) => {
+    const result = await proxyJson(`${config.AUTH_SERVICE_URL}/api/admin/register`, {
+      method: "POST",
+      headers: {
+        ...buildDownstreamHeaders(request),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(request.body),
+    });
+
+    return reply.status(result.status).send(result.body);
+  });
+
   app.post("/api/verify-otp", async (request, reply) => {
     const result = await proxyJson(`${config.AUTH_SERVICE_URL}/api/verify-otp`, {
       method: "POST",

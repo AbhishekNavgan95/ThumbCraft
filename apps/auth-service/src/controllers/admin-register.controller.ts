@@ -4,37 +4,46 @@ import { AppError } from "@platform/errors";
 import type { RabbitMQClient } from "@platform/rabbitmq-client";
 import {
   RoutingKeys,
-  type AuthOtpRequestedPayload,
   type PlatformEvent,
+  type UserRegisteredPayload,
 } from "@platform/messaging-contract";
 import type { AuthServiceConfig } from "../config.js";
-import { createOtp, generateOtpCode } from "../services/otp.service.js";
-import { createPendingUser } from "../services/user.service.js";
+import { createToken } from "../services/token.service.js";
+import { createVerifiedAdmin } from "../services/user.service.js";
+import type { PublicUser } from "../types.js";
 
-export interface SignupInput {
+export interface AdminRegisterInput {
   name: string;
   email: string;
   password: string;
+  inviteSecret: string;
 }
 
-export interface SignupResult {
+export interface AdminRegisterResult {
+  token: string;
+  user: PublicUser;
   message: string;
-  email: string;
 }
 
-export async function signup(
+export async function registerAdmin(
   prisma: PrismaClient,
   rabbitmq: RabbitMQClient,
   config: AuthServiceConfig,
-  input: SignupInput,
+  input: AdminRegisterInput,
   correlationId: string,
-): Promise<SignupResult> {
+): Promise<AdminRegisterResult> {
+  if (input.inviteSecret !== config.ADMIN_INVITE_SECRET) {
+    throw new AppError("FORBIDDEN", "Invalid admin invite secret", 403);
+  }
 
-  const user = await createPendingUser(prisma, input);
-  const otp = generateOtpCode();
-  const expiresAt = await createOtp(prisma, user.id, otp, config.OTP_TTL_MINUTES);
+  const user = await createVerifiedAdmin(prisma, {
+    name: input.name,
+    email: input.email,
+    password: input.password,
+  });
+  const token = createToken(config, user);
 
-  const event: PlatformEvent<AuthOtpRequestedPayload> = {
+  const event: PlatformEvent<UserRegisteredPayload> = {
     eventId: randomUUID(),
     correlationId,
     timestamp: new Date().toISOString(),
@@ -42,20 +51,19 @@ export async function signup(
     payload: {
       email: user.email,
       name: user.name,
-      otp,
-      expiresAt: expiresAt.toISOString(),
     },
   };
 
-  await rabbitmq.publish(RoutingKeys.AUTH_OTP_REQUESTED, event);
+  await rabbitmq.publish(RoutingKeys.USER_REGISTERED, event);
 
   return {
-    message: "Verification OTP sent. Please check your email.",
-    email: user.email,
+    token,
+    user,
+    message: "Admin account created successfully.",
   };
 }
 
-export function validateSignupInput(input: SignupInput): void {
+export function validateAdminRegisterInput(input: AdminRegisterInput): void {
   if (!input.name || input.name.trim().length < 2) {
     throw new AppError("VALIDATION_ERROR", "Name must be at least 2 characters", 422);
   }
@@ -66,5 +74,9 @@ export function validateSignupInput(input: SignupInput): void {
 
   if (!input.password || input.password.length < 6) {
     throw new AppError("VALIDATION_ERROR", "Password must be at least 6 characters", 422);
+  }
+
+  if (!input.inviteSecret) {
+    throw new AppError("VALIDATION_ERROR", "Invite secret is required", 422);
   }
 }

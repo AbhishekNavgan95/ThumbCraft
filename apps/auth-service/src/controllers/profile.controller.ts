@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "../generated/prisma/client.js";
 import { AppError } from "@platform/errors";
 import { findUserById, toPublicUser } from "../services/user.service.js";
 import type { PublicUser } from "../types.js";

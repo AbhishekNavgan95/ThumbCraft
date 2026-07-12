@@ -10,3 +10,4 @@ Thumbs.db
 coverage/
 .turbo/
 *.tsbuildinfo
+**/src/generated/

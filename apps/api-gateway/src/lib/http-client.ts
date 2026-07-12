@@ -21,8 +21,11 @@ export function buildDownstreamHeaders(
     headers.Authorization = authorization;
   }
 
-  if (request.user?.id) {
+  if (request.user) {
     headers["X-User-Id"] = request.user.id;
+    headers["X-User-Email"] = request.user.email;
+    headers["X-User-Name"] = request.user.name;
+    headers["X-User-Role"] = request.user.role;
   }
 
   return headers;

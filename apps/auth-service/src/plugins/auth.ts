@@ -2,18 +2,23 @@ import { AppError } from "@platform/errors";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import jwt from "jsonwebtoken";
 import type { AuthServiceConfig } from "../config.js";
-import type { AuthUser } from "../types.js";
+import type { AuthUser, UserRole } from "../types.js";
+
+function parseRole(value: unknown): UserRole | null {
+  return value === "customer" || value === "admin" ? value : null;
+}
 
 function parseAuthUser(payload: jwt.JwtPayload): AuthUser | null {
   const id = typeof payload.id === "string" ? payload.id : null;
   const email = typeof payload.email === "string" ? payload.email : null;
   const name = typeof payload.name === "string" ? payload.name : null;
+  const role = parseRole(payload.role) ?? "customer";
 
   if (!id || !email || !name) {
     return null;
   }
 
-  return { id, email, name };
+  return { id, email, name, role };
 }
 
 export async function requireAuth(
@@ -24,8 +29,10 @@ export async function requireAuth(
   if (typeof userId === "string" && userId.length > 0) {
     const email = request.headers["x-user-email"];
     const name = request.headers["x-user-name"];
+    const roleHeader = request.headers["x-user-role"];
     if (typeof email === "string" && typeof name === "string") {
-      request.user = { id: userId, email, name };
+      const role = parseRole(roleHeader) ?? "customer";
+      request.user = { id: userId, email, name, role };
       return;
     }
   }
@@ -54,16 +61,28 @@ export async function requireAuth(
   }
 }
 
+export async function requireAdmin(
+  config: AuthServiceConfig,
+  request: FastifyRequest,
+): Promise<void> {
+  await requireAuth(config, request);
+  if (request.user?.role !== "admin") {
+    throw new AppError("FORBIDDEN", "Admin access required", 403);
+  }
+}
+
 export async function registerAuthPlugin(
   app: FastifyInstance,
   config: AuthServiceConfig,
 ): Promise<void> {
   app.decorateRequest("user", undefined);
   app.decorate("requireAuth", async (request) => requireAuth(config, request));
+  app.decorate("requireAdmin", async (request) => requireAdmin(config, request));
 }
 
 declare module "fastify" {
   interface FastifyInstance {
     requireAuth: (request: FastifyRequest) => Promise<void>;
+    requireAdmin: (request: FastifyRequest) => Promise<void>;
   }
 }

@@ -1,10 +1,15 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  customer
+  admin
 }
 
 model User {
@@ -12,6 +17,7 @@ model User {
   email           String    @unique
   name            String
   passwordHash    String    @map("password_hash")
+  role            UserRole  @default(customer)
   emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamptz(6)
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   otpCodes        OtpCode[]

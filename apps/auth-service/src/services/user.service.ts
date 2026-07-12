@@ -1,13 +1,19 @@
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient, UserRole } from "../generated/prisma/client.js";
 import { AppError } from "@platform/errors";
 import { hashPassword, verifyPassword } from "./password.service.js";
 import type { PublicUser } from "../types.js";
 
-function toPublicUser(user: { id: string; email: string; name: string }): PublicUser {
+function toPublicUser(user: {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+}): PublicUser {
   return {
     id: user.id,
     email: user.email,
     name: user.name,
+    role: user.role,
   };
 }
 
@@ -44,6 +50,36 @@ export async function createPendingUser(
       email,
       name: input.name.trim(),
       passwordHash,
+      role: "customer",
+    },
+  });
+
+  return toPublicUser(user);
+}
+
+export async function createVerifiedAdmin(
+  prisma: PrismaClient,
+  input: { name: string; email: string; password: string },
+): Promise<PublicUser> {
+  const email = input.email.toLowerCase().trim();
+  const existing = await findUserByEmail(prisma, email);
+  if (existing) {
+    throw new AppError(
+      "CONFLICT",
+      "An account with this email already exists",
+      409,
+      { suggestion: "Please try logging in instead, or use a different email address." },
+    );
+  }
+
+  const passwordHash = await hashPassword(input.password);
+  const user = await prisma.user.create({
+    data: {
+      email,
+      name: input.name.trim(),
+      passwordHash,
+      role: "admin",
+      emailVerifiedAt: new Date(),
     },
   });
 

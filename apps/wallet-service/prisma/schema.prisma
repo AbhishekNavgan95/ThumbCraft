@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TransactionType {
+  welcome_bonus
+  purchase
+  reserve
+  capture
+  release
+}
+
+enum TransactionStatus {
+  pending
+  completed
+  failed
+}
+
+model Wallet {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @unique @map("user_id") @db.Uuid
+  balanceCoins  Int      @default(0) @map("balance_coins")
+  reservedCoins Int      @default(0) @map("reserved_coins")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("wallets")
+}
+
+model CoinPackage {
+  id              String   @id @default(uuid()) @db.Uuid
+  name            String
+  coins           Int
+  priceCents      Int      @map("price_cents")
+  currency        String   @default("usd")
+  stripeProductId String   @map("stripe_product_id")
+  stripePriceId   String   @map("stripe_price_id")
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([active], map: "idx_coin_packages_active")
+  @@map("coin_packages")
+}
+
+model StripeCustomer {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @unique @map("user_id") @db.Uuid
+  stripeCustomerId String   @unique @map("stripe_customer_id")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("stripe_customers")
+}
+
+model Transaction {
+  id              String            @id @default(uuid()) @db.Uuid
+  userId          String            @map("user_id") @db.Uuid
+  type            TransactionType
+  amount          Int
+  status          TransactionStatus @default(completed)
+  jobId           String?           @map("job_id") @db.Uuid
+  modelId         String?           @map("model_id")
+  stripePaymentId String?           @unique @map("stripe_payment_id")
+  packageId       String?           @map("package_id") @db.Uuid
+  idempotencyKey  String            @unique @map("idempotency_key")
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([userId], map: "idx_transactions_user_id")
+  @@map("transactions")
+}

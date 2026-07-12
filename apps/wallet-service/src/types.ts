@@ -1,12 +1,5 @@
 export type UserRole = "customer" | "admin";
 
-export interface PublicUser {
-  id: string;
-  email: string;
-  name: string;
-  role: UserRole;
-}
-
 export interface AuthUser {
   id: string;
   email: string;
@@ -18,5 +11,6 @@ declare module "fastify" {
   interface FastifyRequest {
     user?: AuthUser;
     correlationId?: string;
+    rawBody?: Buffer;
   }
 }

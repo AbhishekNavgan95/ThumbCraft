@@ -1,5 +1,5 @@
 import { randomInt } from "node:crypto";
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "../generated/prisma/client.js";
 import { hashOtp, verifyOtp } from "./password.service.js";
 
 export function generateOtpCode(): string {
