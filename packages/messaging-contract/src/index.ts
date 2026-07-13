@@ -9,6 +9,7 @@ export const RoutingKeys = {
   GENERATION_COMPLETED: "generation.completed",
   GENERATION_FAILED: "generation.failed",
   WALLET_PURCHASE_COMPLETED: "wallet.purchase_completed",
+  WALLET_PURCHASE_FAILED: "wallet.purchase_failed",
 } as const;
 
 export type RoutingKey = (typeof RoutingKeys)[keyof typeof RoutingKeys];
@@ -54,8 +55,19 @@ export interface GenerationFailedPayload {
 }
 
 export interface WalletPurchaseCompletedPayload {
+  email: string;
+  name: string;
   coins: number;
+  packageName: string;
   stripePaymentId: string;
+}
+
+export interface WalletPurchaseFailedPayload {
+  email: string;
+  name: string;
+  coins: number;
+  packageName: string;
+  reason: string;
 }
 
 export const Queues = {

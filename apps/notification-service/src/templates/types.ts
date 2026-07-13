@@ -8,7 +8,9 @@ export type EmailTemplateId =
   | "otp-verification"
   | "welcome"
   | "generation-completed"
-  | "generation-failed";
+  | "generation-failed"
+  | "purchase-completed"
+  | "purchase-failed";
 
 export interface EmailTemplateData {
   "otp-verification": {
@@ -25,6 +27,18 @@ export interface EmailTemplateData {
   "generation-failed": {
     name: string;
     error: string;
+  };
+  "purchase-completed": {
+    name: string;
+    coins: number;
+    packageName: string;
+    stripePaymentId: string;
+  };
+  "purchase-failed": {
+    name: string;
+    coins: number;
+    packageName: string;
+    reason: string;
   };
 }
 

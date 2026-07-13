@@ -57,6 +57,23 @@ export async function registerWalletRoutes(
     },
   );
 
+  app.get(
+    "/api/wallet/payments/:sessionId",
+    { preHandler: authHook },
+    async (request, reply) => {
+      const { sessionId } = request.params as { sessionId: string };
+      const result = await proxyJson(
+        `${config.WALLET_SERVICE_URL}/api/wallet/payments/${encodeURIComponent(sessionId)}`,
+        {
+          method: "GET",
+          headers: buildDownstreamHeaders(request),
+        },
+      );
+
+      return reply.status(result.status).send(result.body);
+    },
+  );
+
   app.post(
     "/api/wallet/packages",
     { preHandler: adminHook },

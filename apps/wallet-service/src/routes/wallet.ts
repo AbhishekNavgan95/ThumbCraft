@@ -10,7 +10,7 @@ import {
   listPackagesForCustomer,
   patchPackage,
 } from "../controllers/package.controller.js";
-import { startCheckout } from "../controllers/checkout.controller.js";
+import { startCheckout, getPaymentStatus } from "../controllers/checkout.controller.js";
 
 export async function registerWalletRoutes(
   app: FastifyInstance,
@@ -111,6 +111,20 @@ export async function registerWalletRoutes(
       const result = await startCheckout(prisma, stripe, config, request.user!, {
         packageId: body.packageId ?? "",
       });
+      return reply.status(200).send(result);
+    },
+  );
+
+  app.get(
+    "/api/wallet/payments/:sessionId",
+    {
+      preHandler: async (request) => {
+        await app.requireAuth(request);
+      },
+    },
+    async (request, reply) => {
+      const { sessionId } = request.params as { sessionId: string };
+      const result = await getPaymentStatus(prisma, request.user!.id, sessionId);
       return reply.status(200).send(result);
     },
   );

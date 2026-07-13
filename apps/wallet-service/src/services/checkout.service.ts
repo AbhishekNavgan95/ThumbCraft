@@ -57,7 +57,10 @@ export async function createCheckoutSession(
     client_reference_id: user.id,
     metadata: {
       userId: user.id,
+      email: user.email,
+      name: user.name,
       packageId: coinPackage.id,
+      packageName: coinPackage.name,
       coins: String(coinPackage.coins),
     },
   });
@@ -66,8 +69,46 @@ export async function createCheckoutSession(
     throw new AppError("INTERNAL_ERROR", "Failed to create Stripe checkout session", 500);
   }
 
+  await prisma.checkoutSession.create({
+    data: {
+      stripeSessionId: session.id,
+      userId: user.id,
+      packageId: coinPackage.id,
+      packageName: coinPackage.name,
+      coins: coinPackage.coins,
+      status: "pending",
+    },
+  });
+
   return {
     checkoutUrl: session.url,
     sessionId: session.id,
+  };
+}
+
+export async function getCheckoutPaymentStatus(
+  prisma: PrismaClient,
+  userId: string,
+  sessionId: string,
+) {
+  const checkout = await prisma.checkoutSession.findUnique({
+    where: { stripeSessionId: sessionId },
+  });
+
+  if (!checkout || checkout.userId !== userId) {
+    throw new AppError("NOT_FOUND", "Payment session not found", 404);
+  }
+
+  return {
+    payment: {
+      sessionId: checkout.stripeSessionId,
+      status: checkout.status,
+      coins: checkout.coins,
+      packageId: checkout.packageId,
+      packageName: checkout.packageName,
+      stripePaymentId: checkout.stripePaymentId,
+      failureReason: checkout.failureReason,
+      updatedAt: checkout.updatedAt.toISOString(),
+    },
   };
 }

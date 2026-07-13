@@ -21,6 +21,13 @@ enum TransactionStatus {
   failed
 }
 
+enum CheckoutStatus {
+  pending
+  completed
+  failed
+  expired
+}
+
 model Wallet {
   id            String   @id @default(uuid()) @db.Uuid
   userId        String   @unique @map("user_id") @db.Uuid
@@ -72,4 +79,21 @@ model Transaction {
 
   @@index([userId], map: "idx_transactions_user_id")
   @@map("transactions")
+}
+
+model CheckoutSession {
+  id              String         @id @default(uuid()) @db.Uuid
+  stripeSessionId String         @unique @map("stripe_session_id")
+  userId          String         @map("user_id") @db.Uuid
+  packageId       String         @map("package_id") @db.Uuid
+  packageName     String         @map("package_name")
+  coins           Int
+  status          CheckoutStatus @default(pending)
+  stripePaymentId String?        @map("stripe_payment_id")
+  failureReason   String?        @map("failure_reason")
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([userId], map: "idx_checkout_sessions_user_id")
+  @@map("checkout_sessions")
 }

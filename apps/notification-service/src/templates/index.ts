@@ -1,6 +1,8 @@
 import { renderGenerationCompleted } from "./generation-completed.js";
 import { renderGenerationFailed } from "./generation-failed.js";
 import { renderOtpVerification } from "./otp-verification.js";
+import { renderPurchaseCompleted } from "./purchase-completed.js";
+import { renderPurchaseFailed } from "./purchase-failed.js";
 import { renderWelcome } from "./welcome.js";
 import type {
   EmailContent,
@@ -16,6 +18,8 @@ const templates: {
   welcome: renderWelcome,
   "generation-completed": renderGenerationCompleted,
   "generation-failed": renderGenerationFailed,
+  "purchase-completed": renderPurchaseCompleted,
+  "purchase-failed": renderPurchaseFailed,
 };
 
 export function renderEmailTemplate<T extends EmailTemplateId>(

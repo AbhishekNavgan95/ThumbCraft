@@ -22,6 +22,7 @@ const bindings = [
       "generation.completed",
       "generation.failed",
       "wallet.purchase_completed",
+      "wallet.purchase_failed",
     ],
   },
 ];

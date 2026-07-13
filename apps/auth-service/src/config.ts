@@ -8,7 +8,7 @@ export const configSchema = baseServiceSchema.extend({
   RABBITMQ_URL: z.string().url(),
   OTP_TTL_MINUTES: z.coerce.number().int().positive().default(10),
   /** Shared secret required to bootstrap admin accounts via POST /api/admin/register */
-  ADMIN_INVITE_SECRET: z.string().min(16),
+  ADMIN_INVITE_SECRET: z.string(),
 });
 
 export type AuthServiceConfig = z.infer<typeof configSchema>;
