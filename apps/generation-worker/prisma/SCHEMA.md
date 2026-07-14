@@ -10,10 +10,24 @@ Chat-style **messages** + **`generation_jobs`** as the wallet `jobId` for charge
 
 ```mermaid
 erDiagram
+  generation_models ||--o{ generation_messages : "selected as"
   generation_sessions ||--o{ generation_messages : "has"
   generation_sessions ||--o{ generation_jobs : "has"
   generation_messages ||--o| generation_messages : "assistant references user"
   generation_messages ||--o{ generation_jobs : "billed via"
+  template_categories ||--o{ thumbnail_templates : "has"
+
+  generation_models {
+    uuid id PK
+    Provider provider
+    text provider_model_id UK
+    text title
+    text description
+    text_arr supported_aspect_ratios
+    text_arr supported_resolutions
+    bool visible
+    int sort_order
+  }
 
   generation_sessions {
     uuid id PK
@@ -24,49 +38,30 @@ erDiagram
     uuid latest_message_id
     uuid latest_assistant_message_id
     SessionStatus status
-    timestamptz created_at
-    timestamptz updated_at
   }
 
   generation_messages {
     uuid id PK
     uuid session_id FK
     MessageRole role
-    Provider provider
-    text model
+    uuid model_id FK
     text original_prompt
     text enhanced_prompt
     bool used_enhanced_prompt
-    jsonb preferences
-    text_arr reference_image_urls
     text required_aspect_ratio
     text required_resolution
     uuid reference_id FK
     text image_url
-    text mime_type
-    int width
-    int height
-    text interaction_id
     MessageStatus status
-    text error
-    timestamptz completed_at
-    jsonb metadata
-    timestamptz created_at
   }
 
   generation_jobs {
     uuid id PK
-    uuid user_id
-    uuid session_id FK
     uuid message_id FK
     GenerationJobKind kind
     GenerationJobStatus status
     int coin_cost
     text idempotency_key UK
-    text error
-    timestamptz created_at
-    timestamptz updated_at
-    timestamptz completed_at
   }
 ```
 
@@ -76,13 +71,14 @@ erDiagram
 
 | Field | `role = user` | `role = assistant` |
 |--------|----------------|---------------------|
-| `provider` / `model` | per turn | per turn |
+| `model_id` | FK → `generation_models` | same |
 | `original_prompt` | required | null |
 | `enhanced_prompt` | optional result text | null |
 | `used_enhanced_prompt` | label if enhance was used | `false` |
 | `preferences` | wizard filters | `{}` |
-| `reference_image_urls` | user refs | `[]` |
-| `required_aspect_ratio` / `required_resolution` | user selection | null |
+| `reference_image_urls` | user / template refs | `[]` |
+| `reference_template_ids` | optional analytics | `[]` |
+| `required_aspect_ratio` / `required_resolution` | from selected model's lists | null |
 | `reference_id` | null | → user message |
 | `image_url` + meta | null | generated S3 image |
 | `interaction_id` | null | Gemini turn id |
@@ -115,19 +111,17 @@ Job status: `created` → `reserved` → `processing` → `captured` | `released
 ## Hierarchy view
 
 ```
-generation_sessions          (no provider/model — per message only)
+generation_models            (admin catalog; visible → user picker)
 │
-├── latest_message_id
-├── latest_assistant_message_id
-├── latest_interaction_id
+generation_sessions
+│
+├── latest_message_id / latest_assistant_message_id / latest_interaction_id
 │
 ├── generation_messages[]
-│     ├─ user: prompt, used_enhanced_prompt, aspect/resolution, …
-│     └─ assistant: reference_id, image_url, interaction_id, status
+│     ├─ user: model_id, prompt, aspect/resolution (validated vs model)
+│     └─ assistant: model_id, reference_id, image_url, interaction_id, status
 │
 └── generation_jobs[]        (id = wallet jobId, unique idempotency_key)
-      ├─ prompt_enhance → user message
-      └─ generation → assistant message
 ```
 
 ---
@@ -152,6 +146,44 @@ Session
 
 ## Tables
 
+### `generation_models`
+
+Lean admin catalog (from `reference/Gemini-models.json` essentials only).
+
+| Column | Type | Notes |
+|--------|------|--------|
+| `id` | UUID PK | What messages store as `model_id` |
+| `provider` | `Provider` | `gemini` \| `openai` |
+| `provider_model_id` | TEXT UNIQUE | API id, e.g. `gemini-3.1-flash-image` |
+| `title` | TEXT | Selector label |
+| `description` | TEXT | Tooltip — model strengths |
+| `supported_aspect_ratios` | TEXT[] | UI selector options |
+| `supported_resolutions` | TEXT[] | UI selector options |
+| `visible` | BOOLEAN | Admin toggle for user picker (`false` by default) |
+| `sort_order` | INT | Display order |
+| `created_at` / `updated_at` | TIMESTAMPTZ | |
+
+**Not stored:** alias, grounding flags, thinking, best_for, latency, max refs — keep those in `reference/` docs or adapters if needed later.
+
+**API sketch**
+- User: `GET /api/models` → `WHERE visible = true` (include `title`, `description` for tooltips + aspect/resolution lists)
+- Admin: full CRUD + `PATCH` visibility / sort
+
+Validate on send: `requiredAspectRatio ∈ model.supportedAspectRatios` and same for resolution.
+
+**Seed from reference file:**
+
+```bash
+# from apps/generation-worker (DATABASE_URL in .env)
+pnpm db:seed:models
+```
+
+Upserts `provider_model_id` from `reference/Gemini-models.json`.
+Maps `name` → `title`, `recommended_for` → `description`.
+Re-runs update title/description/ratios/resolutions/sort; do **not** overwrite existing `visible`. New rows: flash + pro visible by default; legacy `gemini-2.5-flash-image` hidden.
+
+---
+
 ### `generation_sessions`
 
 | Column | Type | Notes |
@@ -165,7 +197,7 @@ Session
 | `status` | `SessionStatus` | |
 | `created_at` / `updated_at` | TIMESTAMPTZ | |
 
-No `provider` / `model` on session — chosen per message.
+No `provider` / `model` on session — chosen per message via `model_id`.
 
 ---
 
@@ -176,12 +208,13 @@ No `provider` / `model` on session — chosen per message.
 | `id` | UUID PK | Chat row only (not wallet jobId) |
 | `session_id` | UUID FK | CASCADE |
 | `role` | `MessageRole` | |
-| `provider` / `model` | per turn | |
+| `model_id` | UUID FK → `generation_models` | RESTRICT delete |
 | `original_prompt` / `enhanced_prompt` | TEXT? | user |
 | `used_enhanced_prompt` | BOOLEAN | user label |
 | `preferences` | JSONB | user |
 | `reference_image_urls` | TEXT[] | user |
-| `required_aspect_ratio` / `required_resolution` | TEXT? | user |
+| `reference_template_ids` | TEXT[] | optional analytics |
+| `required_aspect_ratio` / `required_resolution` | TEXT? | must be in model lists |
 | `reference_id` | UUID FK? | assistant → user |
 | `image_url` + mime/width/height | | assistant |
 | `interaction_id` | TEXT? | assistant |
@@ -239,6 +272,7 @@ Enhance-prompt module: same pattern with `kind = prompt_enhance` and its own `ge
 | From | To | On delete |
 |------|-----|-----------|
 | messages.session_id | sessions.id | CASCADE |
+| messages.model_id | models.id | RESTRICT |
 | messages.reference_id | messages.id | SET NULL |
 | jobs.session_id | sessions.id | SET NULL |
 | jobs.message_id | messages.id | SET NULL |

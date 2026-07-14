@@ -13,7 +13,8 @@
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset --force",
     "db:push": "prisma db push",
-    "db:deploy": "prisma migrate deploy"
+    "db:deploy": "prisma migrate deploy",
+    "db:seed:models": "tsx prisma/seed-models.ts"
   },
   "dependencies": {
     "@platform/config": "workspace:*",

@@ -45,8 +45,36 @@ enum GenerationJobStatus {
   failed
 }
 
+/// Admin-managed AI model catalog. `visible` controls user picker.
+/// Seed/update from reference/Gemini-models.json (and OpenAI equivalents) via admin CRUD.
+model GenerationModel {
+  id          String   @id @default(uuid()) @db.Uuid
+  provider    Provider
+  /// Vendor API id sent to the provider (e.g. gemini-3.1-flash-image).
+  providerModelId String @unique @map("provider_model_id")
+  /// Short label shown in the model selector.
+  title       String
+  /// Tooltip / subtitle — model strengths for quick understanding.
+  description String
+  /// e.g. ["1:1", "16:9", "9:16"]
+  supportedAspectRatios String[] @map("supported_aspect_ratios")
+  /// e.g. ["512x512", "1024x1024", "2048x2048"]
+  supportedResolutions  String[] @map("supported_resolutions")
+  /// When false, hidden from user selection (admin can still see / re-enable).
+  visible     Boolean  @default(false)
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  messages GenerationMessage[]
+
+  @@index([visible, sortOrder], map: "idx_generation_models_visible_sort")
+  @@index([provider], map: "idx_generation_models_provider")
+  @@map("generation_models")
+}
+
 /// Entry point for an iterative thumbnail conversation.
-/// Provider/model live only on messages (per-turn toggle).
+/// Provider/model live on each message via GenerationModel FK.
 model GenerationSession {
   id                       String        @id @default(uuid()) @db.Uuid
   userId                   String        @map("user_id") @db.Uuid
@@ -80,8 +108,8 @@ model GenerationMessage {
   id        String      @id @default(uuid()) @db.Uuid
   sessionId String      @map("session_id") @db.Uuid
   role      MessageRole
-  provider  Provider
-  model     String
+  /// FK into generation_models (admin catalog). Provider resolved via relation.
+  modelId   String      @map("model_id") @db.Uuid
 
   // ── user message fields ──────────────────────────────────────────
   originalPrompt      String?  @map("original_prompt")
@@ -94,9 +122,9 @@ model GenerationMessage {
   referenceImageUrls  String[] @default([]) @map("reference_image_urls")
   /// Optional ids of thumbnail_templates selected (analytics); URLs are copied above.
   referenceTemplateIds String[] @default([]) @map("reference_template_ids")
-  /// e.g. "16:9", "1:1" — validate against model caps in app.
+  /// Must be one of selected model's supportedAspectRatios.
   requiredAspectRatio String?  @map("required_aspect_ratio")
-  /// e.g. "1024x1024", "2K" — validate against model caps in app.
+  /// Must be one of selected model's supportedResolutions.
   requiredResolution  String?  @map("required_resolution")
 
   // ── assistant message fields ─────────────────────────────────────
@@ -117,6 +145,7 @@ model GenerationMessage {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   session          GenerationSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  model            GenerationModel     @relation(fields: [modelId], references: [id], onDelete: Restrict)
   referenceMessage GenerationMessage?  @relation("MessageReference", fields: [referenceId], references: [id], onDelete: SetNull)
   replies          GenerationMessage[] @relation("MessageReference")
   /// Billable jobs tied to this message (generation → assistant; enhance → user).
@@ -125,6 +154,7 @@ model GenerationMessage {
   @@index([sessionId], map: "idx_generation_messages_session_id")
   @@index([sessionId, createdAt], map: "idx_generation_messages_session_created")
   @@index([sessionId, role], map: "idx_generation_messages_session_role")
+  @@index([modelId], map: "idx_generation_messages_model_id")
   @@index([referenceId], map: "idx_generation_messages_reference_id")
   @@index([status], map: "idx_generation_messages_status")
   @@map("generation_messages")
