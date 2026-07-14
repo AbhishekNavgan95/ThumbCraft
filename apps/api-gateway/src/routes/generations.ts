@@ -1,3 +1,7 @@
+/**
+ * Generation + upload proxies.
+ * Auth: gateway `requireAuth` verifies JWT; downstream calls include X-User-* headers.
+ */
 import type { FastifyInstance } from "fastify";
 import type { GatewayConfig } from "../config.js";
 import { buildDownstreamHeaders, proxyJson } from "../lib/http-client.js";
@@ -10,6 +14,25 @@ export async function registerGenerationRoutes(
   const authHook = async (request: import("fastify").FastifyRequest) => {
     await app.requireAuth(request);
   };
+
+  /** JWT at gateway → proxy multipart to worker internal upload. */
+  app.post(
+    "/api/uploads/reference",
+    { preHandler: authHook },
+    async (request, reply) => {
+      const form = await buildMultipartBody(request);
+      const result = await proxyJson(
+        `${config.GENERATION_WORKER_URL}/internal/uploads/reference`,
+        {
+          method: "POST",
+          headers: buildDownstreamHeaders(request),
+          body: form,
+        },
+      );
+
+      return reply.status(result.status).send(result.body);
+    },
+  );
 
   app.post(
     "/api/generate",

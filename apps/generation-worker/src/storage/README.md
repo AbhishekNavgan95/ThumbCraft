@@ -46,6 +46,35 @@ templates/{…}/{id}.{ext}
 
 ## Flow examples
 
+### Frontend reference upload (preview)
+
+Client → **API Gateway** (JWT) → generation-worker **internal** route → S3.
+
+```
+POST /api/uploads/reference          # gateway (Bearer JWT)
+  → POST /internal/uploads/reference # worker (X-User-Id from gateway)
+Authorization: Bearer <jwt>
+Content-Type: multipart/form-data
+
+image: <file>
+sessionId: <optional uuid>
+```
+
+Response `201`:
+
+```json
+{
+  "url": "https://cdn…/references/{userId}/…/….png",
+  "key": "references/…",
+  "contentType": "image/png",
+  "size": 245760,
+  "folder": "references"
+}
+```
+
+Use `url` for UI preview and later as an entry in `referenceImageUrls` on generate/refine.
+Worker will call `getObjectBase64(url)` when building the model request.
+
 Upload generated thumbnail:
 
 ```ts

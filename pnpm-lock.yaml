@@ -124,6 +124,9 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.758.0
         version: 3.1087.0
+      '@fastify/multipart':
+        specifier: ^9.0.3
+        version: 9.4.0
       '@platform/config':
         specifier: workspace:*
         version: link:../../packages/config
