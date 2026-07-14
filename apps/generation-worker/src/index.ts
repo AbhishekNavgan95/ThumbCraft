@@ -4,8 +4,11 @@ import { randomUUID } from "node:crypto";
 import { createLogger } from "@platform/logger";
 import { AppError } from "@platform/errors";
 import { loadGenerationConfig } from "./config.js";
+import { createPrismaClient } from "./db/index.js";
+import { registerModelRoutes } from "./modules/models/model.routes.js";
 import { registerUploadRoutes } from "./modules/uploads/upload.routes.js";
 import { UploadService } from "./modules/uploads/upload.service.js";
+import { registerAuthPlugin } from "./plugins/auth.js";
 import { registerErrorHandler } from "./plugins/error-handler.js";
 import { createS3StorageFromEnv } from "./storage/index.js";
 import "./types.js";
@@ -17,6 +20,7 @@ const logger = createLogger({
 });
 
 const app = Fastify({ logger: false, bodyLimit: 12 * 1024 * 1024 });
+const prisma = createPrismaClient();
 
 await app.register(multipart, {
   limits: {
@@ -34,6 +38,7 @@ app.addHook("onRequest", async (request) => {
 });
 
 registerErrorHandler(app, logger);
+await registerAuthPlugin(app);
 
 app.get("/health", async () => ({
   status: "ok",
@@ -44,6 +49,8 @@ app.get("/ready", async () => ({
   service: config.SERVICE_NAME,
   s3Configured: Boolean(config.AWS_S3_BUCKET),
 }));
+
+await registerModelRoutes(app, prisma);
 
 if (!config.AWS_S3_BUCKET) {
   logger.warn("AWS_S3_BUCKET not set — upload routes will return 503");
@@ -66,6 +73,8 @@ if (uploadService) {
 
 async function start() {
   try {
+    await prisma.$connect();
+    logger.info("database connected");
     await app.listen({ port: config.PORT, host: "0.0.0.0" });
     logger.info({ port: config.PORT }, "service started");
   } catch (error) {
@@ -73,5 +82,18 @@ async function start() {
     process.exit(1);
   }
 }
+
+async function shutdown() {
+  logger.info("shutting down");
+  await app.close();
+  await prisma.$disconnect();
+}
+
+process.on("SIGINT", () => {
+  void shutdown().finally(() => process.exit(0));
+});
+process.on("SIGTERM", () => {
+  void shutdown().finally(() => process.exit(0));
+});
 
 start();
