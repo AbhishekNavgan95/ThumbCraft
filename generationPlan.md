@@ -459,3 +459,33 @@ The latest session state points to Message 4 while preserving the complete gener
 - Provider-independent architecture that can support OpenAI or future models.
 - Immutable message history simplifies debugging and future features.
 - Ready for future enhancements such as branching, version comparison, or collaborative editing without requiring database redesign.
+
+---
+
+# Development modules (todos)
+
+Build the generation-worker in this order. Each module: routes → controller → service → prisma.
+
+## Checklist
+
+- [ ] **Models** — admin CRUD; public `GET` visible models (title, description, aspect/resolution lists); seed script
+- [ ] **Templates** — categories + thumbnail library; admin CRUD; public browse by category
+- [ ] **Sessions** — create / list / get thread; maintain `latest_*` pointers
+- [ ] **Messages** — user + assistant turns; validate `model_id`, aspect/resolution, refs; `reference_id` wiring
+- [ ] **Jobs / billing bridge** — `generation_jobs` + idempotency; wallet quote/reserve (sync); capture/release via events
+- [ ] **Prompt enhance** — module with `kind = prompt_enhance`; set `used_enhanced_prompt` / `enhanced_prompt`
+- [ ] **Providers (adapters)** — Gemini Interactions + OpenAI; shared `generate` / `edit` interface
+- [x] **Storage** — S3 upload for user refs + generated images
+- [ ] **Workers / consumers** — RabbitMQ: job → adapter → S3 → `completed` / `failed` events; update session head
+- [ ] **Internal HTTP + gateway** — `/internal/...` for gateway; public proxies (sessions, refine, poll, models, templates)
+
+## Suggested folder layout
+
+```
+src/
+  modules/models|templates|sessions|messages|jobs|enhance/
+  providers/gemini|openai/
+  storage/
+  consumers/
+  routes/
+```

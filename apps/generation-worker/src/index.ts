@@ -1,20 +1,18 @@
 import Fastify from "fastify";
-import { loadConfig, baseServiceSchema, z } from "@platform/config";
 import { createLogger } from "@platform/logger";
+import { loadGenerationConfig } from "./config.js";
 
-const configSchema = baseServiceSchema.extend({
-  SERVICE_NAME: z.string().default("generation-worker"),
-  DATABASE_URL: z.string().url(),
-  RABBITMQ_URL: z.string().url(),
-});
-
-const config = loadConfig(configSchema);
+const config = loadGenerationConfig();
 const logger = createLogger({ service: config.SERVICE_NAME, level: config.LOG_LEVEL });
 
 const app = Fastify({ logger: false });
 
 app.get("/health", async () => ({ status: "ok", service: config.SERVICE_NAME }));
-app.get("/ready", async () => ({ status: "ready", service: config.SERVICE_NAME }));
+app.get("/ready", async () => ({
+  status: "ready",
+  service: config.SERVICE_NAME,
+  s3Configured: Boolean(config.AWS_S3_BUCKET),
+}));
 
 async function start() {
   try {
