@@ -1,5 +1,6 @@
 import { AppError } from "@platform/errors";
-import type { Prisma, PrismaClient, Provider } from "../../generated/prisma/client.js";
+import type { PrismaClient, Provider } from "../../generated/prisma/client.js";
+import type { GenerationModelUpdateInput } from "../../generated/prisma/models.js";
 
 export interface CreateModelInput {
   provider: Provider;
@@ -115,7 +116,7 @@ export async function updateModel(
     throw new AppError("NOT_FOUND", "Generation model not found", 404);
   }
 
-  const data: Prisma.GenerationModelUpdateInput = {
+  const data: GenerationModelUpdateInput = {
     ...(input.provider !== undefined ? { provider: input.provider } : {}),
     ...(input.providerModelId !== undefined
       ? { providerModelId: input.providerModelId }

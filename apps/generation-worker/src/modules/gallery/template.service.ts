@@ -1,5 +1,6 @@
 import { AppError } from "@platform/errors";
-import type { Prisma, PrismaClient } from "../../generated/prisma/client.js";
+import type { PrismaClient } from "../../generated/prisma/client.js";
+import type { ThumbnailTemplateUpdateInput } from "../../generated/prisma/models.js";
 import { findCategoryById, findCategoryBySlug } from "./category.service.js";
 
 export interface CreateTemplateInput {
@@ -173,7 +174,7 @@ export async function updateTemplate(
     await resolveCategoryId(prisma, input.categoryId);
   }
 
-  const data: Prisma.ThumbnailTemplateUpdateInput = {
+  const data: ThumbnailTemplateUpdateInput = {
     ...(input.categoryId !== undefined
       ? { category: { connect: { id: input.categoryId } } }
       : {}),

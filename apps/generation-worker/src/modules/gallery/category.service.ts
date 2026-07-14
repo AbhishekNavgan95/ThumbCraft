@@ -1,5 +1,6 @@
 import { AppError } from "@platform/errors";
-import type { Prisma, PrismaClient } from "../../generated/prisma/client.js";
+import type { PrismaClient } from "../../generated/prisma/client.js";
+import type { TemplateCategoryUpdateInput } from "../../generated/prisma/models.js";
 
 export interface CreateCategoryInput {
   slug: string;
@@ -113,7 +114,7 @@ export async function updateCategory(
     throw new AppError("NOT_FOUND", "Template category not found", 404);
   }
 
-  const data: Prisma.TemplateCategoryUpdateInput = {
+  const data: TemplateCategoryUpdateInput = {
     ...(input.slug !== undefined ? { slug: input.slug } : {}),
     ...(input.name !== undefined ? { name: input.name } : {}),
     ...(input.description !== undefined
