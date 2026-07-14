@@ -5,6 +5,7 @@ import { createLogger } from "@platform/logger";
 import { AppError } from "@platform/errors";
 import { loadGenerationConfig } from "./config.js";
 import { createPrismaClient } from "./db/index.js";
+import { registerGalleryRoutes } from "./modules/gallery/gallery.routes.js";
 import { registerModelRoutes } from "./modules/models/model.routes.js";
 import { registerUploadRoutes } from "./modules/uploads/upload.routes.js";
 import { UploadService } from "./modules/uploads/upload.service.js";
@@ -51,6 +52,7 @@ app.get("/ready", async () => ({
 }));
 
 await registerModelRoutes(app, prisma);
+await registerGalleryRoutes(app, prisma);
 
 if (!config.AWS_S3_BUCKET) {
   logger.warn("AWS_S3_BUCKET not set — upload routes will return 503");
@@ -62,13 +64,23 @@ const uploadService = storage ? new UploadService(storage) : null;
 if (uploadService) {
   await registerUploadRoutes(app, uploadService);
 } else {
-  app.post("/internal/uploads/reference", async () => {
+  const unavailable = async () => {
     throw new AppError(
       "SERVICE_UNAVAILABLE",
       "Image uploads are unavailable: AWS_S3_BUCKET is not configured",
       503,
     );
-  });
+  };
+  app.post("/internal/uploads/reference", unavailable);
+  app.post(
+    "/internal/uploads/template",
+    {
+      preHandler: async (request) => {
+        await app.requireAdmin(request);
+      },
+    },
+    unavailable,
+  );
 }
 
 async function start() {

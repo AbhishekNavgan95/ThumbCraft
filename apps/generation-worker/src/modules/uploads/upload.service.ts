@@ -28,35 +28,33 @@ export interface ReferenceUploadResult {
   folder: "references";
 }
 
+export interface TemplateUploadInput {
+  buffer: Buffer;
+  contentType: string;
+  filename?: string;
+  /** Admin user id (key prefix) */
+  userId: string;
+  /** Optional stable id used in the object key */
+  objectId?: string;
+}
+
+export interface TemplateUploadResult {
+  url: string;
+  key: string;
+  contentType: string;
+  size: number;
+  folder: "templates";
+}
+
 export class UploadService {
   constructor(private readonly storage: S3StorageService) {}
 
   async uploadReferenceImage(
     input: ReferenceUploadInput,
   ): Promise<ReferenceUploadResult> {
-    const contentType = input.contentType.split(";")[0]?.trim().toLowerCase() ?? "";
-    if (!ALLOWED_MIME.has(contentType)) {
-      throw new AppError(
-        "VALIDATION_ERROR",
-        "Only JPEG, PNG, WebP, or GIF images are allowed",
-        400,
-        { contentType },
-      );
-    }
+    this.assertValidImage(input.buffer, input.contentType);
 
-    if (!input.buffer.length) {
-      throw new AppError("VALIDATION_ERROR", "Empty image file", 400);
-    }
-
-    if (input.buffer.byteLength > MAX_FILE_SIZE) {
-      throw new AppError(
-        "VALIDATION_ERROR",
-        "File too large. Maximum size is 10MB",
-        400,
-        { size: input.buffer.byteLength },
-      );
-    }
-
+    const contentType = normalizeContentType(input.contentType);
     const uploaded = await this.storage.uploadBuffer({
       buffer: input.buffer,
       contentType,
@@ -76,6 +74,62 @@ export class UploadService {
       folder: "references",
     };
   }
+
+  /** Admin gallery image — stored under templates/ for catalog CDN URLs. */
+  async uploadTemplateImage(
+    input: TemplateUploadInput,
+  ): Promise<TemplateUploadResult> {
+    this.assertValidImage(input.buffer, input.contentType);
+
+    const contentType = normalizeContentType(input.contentType);
+    const uploaded = await this.storage.uploadBuffer({
+      buffer: input.buffer,
+      contentType,
+      folder: "templates",
+      userId: input.userId,
+      objectId: input.objectId,
+      metadata: input.filename
+        ? { original_filename: sanitizeMetadata(input.filename) }
+        : undefined,
+    });
+
+    return {
+      url: uploaded.url,
+      key: uploaded.key,
+      contentType: uploaded.contentType,
+      size: uploaded.size,
+      folder: "templates",
+    };
+  }
+
+  private assertValidImage(buffer: Buffer, contentType: string): void {
+    const normalized = normalizeContentType(contentType);
+    if (!ALLOWED_MIME.has(normalized)) {
+      throw new AppError(
+        "VALIDATION_ERROR",
+        "Only JPEG, PNG, WebP, or GIF images are allowed",
+        400,
+        { contentType: normalized },
+      );
+    }
+
+    if (!buffer.length) {
+      throw new AppError("VALIDATION_ERROR", "Empty image file", 400);
+    }
+
+    if (buffer.byteLength > MAX_FILE_SIZE) {
+      throw new AppError(
+        "VALIDATION_ERROR",
+        "File too large. Maximum size is 10MB",
+        400,
+        { size: buffer.byteLength },
+      );
+    }
+  }
+}
+
+function normalizeContentType(contentType: string): string {
+  return contentType.split(";")[0]?.trim().toLowerCase() ?? "";
 }
 
 function sanitizeMetadata(value: string): string {

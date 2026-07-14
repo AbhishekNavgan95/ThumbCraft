@@ -15,6 +15,10 @@ export async function registerGenerationRoutes(
     await app.requireAuth(request);
   };
 
+  const adminHook = async (request: import("fastify").FastifyRequest) => {
+    await app.requireAdmin(request);
+  };
+
   /** JWT at gateway → proxy multipart to worker internal upload. */
   app.post(
     "/api/uploads/reference",
@@ -23,6 +27,25 @@ export async function registerGenerationRoutes(
       const form = await buildMultipartBody(request);
       const result = await proxyJson(
         `${config.GENERATION_WORKER_URL}/internal/uploads/reference`,
+        {
+          method: "POST",
+          headers: buildDownstreamHeaders(request),
+          body: form,
+        },
+      );
+
+      return reply.status(result.status).send(result.body);
+    },
+  );
+
+  /** Admin gallery image → templates/ folder on S3. */
+  app.post(
+    "/api/uploads/template",
+    { preHandler: adminHook },
+    async (request, reply) => {
+      const form = await buildMultipartBody(request);
+      const result = await proxyJson(
+        `${config.GENERATION_WORKER_URL}/internal/uploads/template`,
         {
           method: "POST",
           headers: buildDownstreamHeaders(request),

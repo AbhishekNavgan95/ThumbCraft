@@ -3,7 +3,8 @@ import type { FastifyRequest } from "fastify";
 import { requireGatewayUserId } from "../../lib/gateway-user.js";
 import { MAX_FILE_SIZE, type UploadService } from "./upload.service.js";
 
-const FILE_FIELDS = new Set(["image", "file", "reference"]);
+const REFERENCE_FILE_FIELDS = new Set(["image", "file", "reference"]);
+const TEMPLATE_FILE_FIELDS = new Set(["image", "file", "template"]);
 
 /**
  * Accepts multipart forwarded by API Gateway (FormData proxy).
@@ -14,7 +15,64 @@ export async function uploadReferenceController(
   uploadService: UploadService,
 ) {
   const userId = requireGatewayUserId(request);
+  const parsed = await parseMultipartImage(request, REFERENCE_FILE_FIELDS, {
+    allowSessionId: true,
+  });
 
+  const result = await uploadService.uploadReferenceImage({
+    buffer: parsed.fileBuffer,
+    contentType: parsed.contentType,
+    filename: parsed.filename,
+    userId,
+    sessionId: parsed.sessionId,
+  });
+
+  return {
+    url: result.url,
+    key: result.key,
+    contentType: result.contentType,
+    size: result.size,
+    folder: result.folder,
+  };
+}
+
+/**
+ * Admin gallery image upload. Caller must run requireAdmin first.
+ * Field `image` (or `file` / `template`).
+ */
+export async function uploadTemplateController(
+  request: FastifyRequest,
+  uploadService: UploadService,
+) {
+  const userId = request.user!.id;
+  const parsed = await parseMultipartImage(request, TEMPLATE_FILE_FIELDS);
+
+  const result = await uploadService.uploadTemplateImage({
+    buffer: parsed.fileBuffer,
+    contentType: parsed.contentType,
+    filename: parsed.filename,
+    userId,
+  });
+
+  return {
+    url: result.url,
+    key: result.key,
+    contentType: result.contentType,
+    size: result.size,
+    folder: result.folder,
+  };
+}
+
+async function parseMultipartImage(
+  request: FastifyRequest,
+  fileFields: Set<string>,
+  options: { allowSessionId?: boolean } = {},
+): Promise<{
+  fileBuffer: Buffer;
+  contentType: string;
+  filename?: string;
+  sessionId?: string;
+}> {
   let fileBuffer: Buffer | null = null;
   let contentType = "";
   let filename: string | undefined;
@@ -22,7 +80,7 @@ export async function uploadReferenceController(
 
   for await (const part of request.parts()) {
     if (part.type === "file") {
-      if (!FILE_FIELDS.has(part.fieldname)) {
+      if (!fileFields.has(part.fieldname)) {
         await part.toBuffer();
         continue;
       }
@@ -33,7 +91,11 @@ export async function uploadReferenceController(
       continue;
     }
 
-    if (part.fieldname === "sessionId" && typeof part.value === "string") {
+    if (
+      options.allowSessionId &&
+      part.fieldname === "sessionId" &&
+      typeof part.value === "string"
+    ) {
       const value = part.value.trim();
       sessionId = value.length > 0 ? value : undefined;
     }
@@ -55,19 +117,5 @@ export async function uploadReferenceController(
     );
   }
 
-  const result = await uploadService.uploadReferenceImage({
-    buffer: fileBuffer,
-    contentType,
-    filename,
-    userId,
-    sessionId,
-  });
-
-  return {
-    url: result.url,
-    key: result.key,
-    contentType: result.contentType,
-    size: result.size,
-    folder: result.folder,
-  };
+  return { fileBuffer, contentType, filename, sessionId };
 }
