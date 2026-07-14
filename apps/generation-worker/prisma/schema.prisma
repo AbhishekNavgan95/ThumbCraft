@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SessionStatus {
+  active
+  archived
+}
+
+enum MessageRole {
+  user
+  assistant
+}
+
+enum MessageStatus {
+  queued
+  processing
+  completed
+  failed
+}
+
+enum Provider {
+  gemini
+  openai
+}
+
+enum GenerationJobKind {
+  generation
+  prompt_enhance
+}
+
+/// Billing + queue lifecycle for a chargeable unit of work.
+/// `id` is the wallet `jobId` for reserve / capture / release.
+enum GenerationJobStatus {
+  created
+  reserved
+  processing
+  captured
+  released
+  failed
+}
+
+/// Entry point for an iterative thumbnail conversation.
+/// Provider/model live only on messages (per-turn toggle).
+model GenerationSession {
+  id                       String        @id @default(uuid()) @db.Uuid
+  userId                   String        @map("user_id") @db.Uuid
+  title                    String?
+  category                 String?
+  /// Gemini Interactions head (from latest successful assistant turn).
+  latestInteractionId      String?       @map("latest_interaction_id")
+  /// Most recent message in the thread (user or assistant).
+  latestMessageId          String?       @map("latest_message_id") @db.Uuid
+  /// Soft pointer to the latest assistant message (current image).
+  latestAssistantMessageId String?       @map("latest_assistant_message_id") @db.Uuid
+  status                   SessionStatus @default(active)
+  createdAt                DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  messages GenerationMessage[]
+  jobs     GenerationJob[]
+
+  @@index([userId], map: "idx_generation_sessions_user_id")
+  @@index([userId, status], map: "idx_generation_sessions_user_status")
+  @@map("generation_sessions")
+}
+
+/// Generic chat message: user turns hold prompts; assistant turns hold image results.
+///
+/// Role contract (null columns unused by role):
+/// - user: originalPrompt, enhancedPrompt?, usedEnhancedPrompt, preferences,
+///         referenceImageUrls, requiredAspectRatio, requiredResolution
+/// - assistant: referenceId → user message, imageUrl + image meta, interactionId?, status, error?
+model GenerationMessage {
+  id        String      @id @default(uuid()) @db.Uuid
+  sessionId String      @map("session_id") @db.Uuid
+  role      MessageRole
+  provider  Provider
+  model     String
+
+  // ── user message fields ──────────────────────────────────────────
+  originalPrompt      String?  @map("original_prompt")
+  enhancedPrompt      String?  @map("enhanced_prompt")
+  /// Label: whether this turn used the enhance-prompt module output.
+  usedEnhancedPrompt  Boolean  @default(false) @map("used_enhanced_prompt")
+  /// Wizard filters (category, mood, theme, etc.).
+  preferences         Json     @default("{}")
+  /// User-uploaded / prior / template reference image URLs (S3).
+  referenceImageUrls  String[] @default([]) @map("reference_image_urls")
+  /// Optional ids of thumbnail_templates selected (analytics); URLs are copied above.
+  referenceTemplateIds String[] @default([]) @map("reference_template_ids")
+  /// e.g. "16:9", "1:1" — validate against model caps in app.
+  requiredAspectRatio String?  @map("required_aspect_ratio")
+  /// e.g. "1024x1024", "2K" — validate against model caps in app.
+  requiredResolution  String?  @map("required_resolution")
+
+  // ── assistant message fields ─────────────────────────────────────
+  /// Points at the user message this assistant reply fulfills.
+  referenceId   String?       @map("reference_id") @db.Uuid
+  imageUrl      String?       @map("image_url")
+  mimeType      String?       @map("mime_type")
+  width         Int?
+  height        Int?
+  /// Provider turn id (Gemini Interactions). Null for OpenAI.
+  interactionId String?       @map("interaction_id")
+  /// Image generation lifecycle on the assistant row.
+  status        MessageStatus @default(queued)
+  error         String?
+  completedAt   DateTime?     @map("completed_at") @db.Timestamptz(6)
+
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  session          GenerationSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  referenceMessage GenerationMessage?  @relation("MessageReference", fields: [referenceId], references: [id], onDelete: SetNull)
+  replies          GenerationMessage[] @relation("MessageReference")
+  /// Billable jobs tied to this message (generation → assistant; enhance → user).
+  jobs             GenerationJob[]
+
+  @@index([sessionId], map: "idx_generation_messages_session_id")
+  @@index([sessionId, createdAt], map: "idx_generation_messages_session_created")
+  @@index([sessionId, role], map: "idx_generation_messages_session_role")
+  @@index([referenceId], map: "idx_generation_messages_reference_id")
+  @@index([status], map: "idx_generation_messages_status")
+  @@map("generation_messages")
+}
+
+/// Billable unit of work. `id` is the wallet `jobId`.
+///
+/// - kind = generation     → messageId = assistant message (1:1 typical)
+/// - kind = prompt_enhance → messageId = user message that received enhancedPrompt
+model GenerationJob {
+  id             String              @id @default(uuid()) @db.Uuid
+  userId         String              @map("user_id") @db.Uuid
+  sessionId      String?             @map("session_id") @db.Uuid
+  messageId      String?             @map("message_id") @db.Uuid
+  kind           GenerationJobKind
+  status         GenerationJobStatus @default(created)
+  coinCost       Int                 @map("coin_cost")
+  /// Client Idempotency-Key — unique per charge attempt.
+  idempotencyKey String              @unique @map("idempotency_key")
+  error          String?
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  completedAt    DateTime?           @map("completed_at") @db.Timestamptz(6)
+
+  session GenerationSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  message GenerationMessage? @relation(fields: [messageId], references: [id], onDelete: SetNull)
+
+  @@index([userId], map: "idx_generation_jobs_user_id")
+  @@index([sessionId], map: "idx_generation_jobs_session_id")
+  @@index([messageId], map: "idx_generation_jobs_message_id")
+  @@index([kind, status], map: "idx_generation_jobs_kind_status")
+  @@map("generation_jobs")
+}
+
+/// Admin-managed library section (e.g. Gaming, Tech, Vlog).
+model TemplateCategory {
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique
+  name        String
+  description String?
+  sortOrder   Int      @default(0) @map("sort_order")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  templates ThumbnailTemplate[]
+
+  @@index([active, sortOrder], map: "idx_template_categories_active_sort")
+  @@map("template_categories")
+}
+
+/// Catalog thumbnail template. Selecting one copies `imageUrl` into
+/// the user message `referenceImageUrls` (no live FK — history stays intact
+/// if the admin later archives or replaces the template).
+model ThumbnailTemplate {
+  id            String   @id @default(uuid()) @db.Uuid
+  categoryId    String   @map("category_id") @db.Uuid
+  title         String
+  description   String?
+  /// Full-size S3/CDN URL used as generation reference.
+  imageUrl      String   @map("image_url")
+  /// Optional smaller preview for the library grid.
+  previewUrl    String?  @map("preview_url")
+  aspectRatio   String?  @map("aspect_ratio")
+  tags          String[] @default([])
+  sortOrder     Int      @default(0) @map("sort_order")
+  active        Boolean  @default(true)
+  /// Auth admin user id (no cross-DB FK).
+  createdBy     String?  @map("created_by") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  category TemplateCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId, active, sortOrder], map: "idx_thumbnail_templates_category_active_sort")
+  @@index([active], map: "idx_thumbnail_templates_active")
+  @@map("thumbnail_templates")
+}
