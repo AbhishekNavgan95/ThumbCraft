@@ -11,6 +11,7 @@ import { registerEnhanceRoutes } from "./modules/enhance/enhance.routes.js";
 import { EnhanceService } from "./modules/enhance/enhance.service.js";
 import { registerGalleryRoutes } from "./modules/gallery/gallery.routes.js";
 import { registerModelRoutes } from "./modules/models/model.routes.js";
+import { registerSessionRoutes } from "./modules/sessions/session.routes.js";
 import { registerUploadRoutes } from "./modules/uploads/upload.routes.js";
 import { UploadService } from "./modules/uploads/upload.service.js";
 import { registerAuthPlugin } from "./plugins/auth.js";
@@ -62,6 +63,7 @@ app.get("/ready", async () => ({
 
 await registerModelRoutes(app, prisma);
 await registerGalleryRoutes(app, prisma);
+await registerSessionRoutes(app, prisma);
 
 if (config.OPENAI_API_KEY) {
   const openai = createOpenAIClient(config.OPENAI_API_KEY);

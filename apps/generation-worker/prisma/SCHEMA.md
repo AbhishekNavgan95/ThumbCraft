@@ -199,6 +199,18 @@ Re-runs update title/description/ratios/resolutions/sort; do **not** overwrite e
 
 No `provider` / `model` on session — chosen per message via `model_id`.
 
+**API** (`/api/sessions`, gateway-proxied, JWT required):
+
+| Method | Path | Behavior |
+|--------|------|----------|
+| `POST` | `/api/sessions` | Ensure session: reuse oldest **active + 0 messages** if any; collapse extra empties; else create. Body optional `title` / `category`. Response `{ session, reused }`; `201` if created, `200` if reused. |
+| `GET` | `/api/sessions` | List own sessions. Query: `status`, `limit` (1–100), `offset`. |
+| `GET` | `/api/sessions/:sessionId` | Get one (ownership enforced). Includes `messageCount`. |
+| `PATCH` | `/api/sessions/:sessionId` | Update `title`, `category`, and/or `status`. |
+| `DELETE` | `/api/sessions/:sessionId` | Delete session (messages cascade). |
+
+Silent frontend bootstrap should call `POST /api/sessions` with `{}` so every user has a default empty session without accumulating dead ones.
+
 ---
 
 ### `generation_messages`

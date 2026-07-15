@@ -59,6 +59,8 @@ This provides:
 
 ---
 
+
+
 # Session Structure
 
 ```
@@ -87,6 +89,8 @@ Generation Session
 The session stores only the latest active state while every message preserves historical context.
 
 ---
+
+
 
 # Session Model
 
@@ -123,6 +127,8 @@ GenerationSession {
 The session acts as the entry point for the entire generation workflow.
 
 ---
+
+
 
 # Message Model
 
@@ -165,6 +171,8 @@ Messages are immutable once created.
 Each message represents a complete snapshot of a generation step.
 
 ---
+
+
 
 # Interaction ID Strategy
 
@@ -228,6 +236,8 @@ This allows the service to continue editing from the latest state while preservi
 
 ---
 
+
+
 # Why Store Every Interaction ID?
 
 Although only the latest interaction ID is required for continuing the conversation, storing every interaction ID provides several advantages.
@@ -243,7 +253,11 @@ Storage cost is negligible compared to image assets.
 
 ---
 
+
+
 # Generation Request Pattern
+
+
 
 ### Initial Generation
 
@@ -280,6 +294,8 @@ Update Session
 ```
 
 ---
+
+
 
 ### Editing Request
 
@@ -325,6 +341,8 @@ Each edit becomes another immutable message.
 
 ---
 
+
+
 # Session State Update
 
 Every successful generation updates the session.
@@ -355,6 +373,8 @@ The previous interaction IDs remain attached to their respective messages.
 
 ---
 
+
+
 # Provider Abstraction
 
 Internally, the Generation Worker hides provider-specific state management.
@@ -366,6 +386,8 @@ Uses
 
 previousInteractionId
 ```
+
+
 
 ## OpenAI
 
@@ -388,6 +410,8 @@ The rest of the application only interacts with Generation Sessions.
 Provider-specific logic remains isolated inside provider adapters.
 
 ---
+
+
 
 # Example Timeline
 
@@ -451,6 +475,8 @@ The latest session state points to Message 4 while preserving the complete gener
 
 ---
 
+
+
 # Benefits of this Design
 
 - Session-based workflow instead of isolated requests.
@@ -462,33 +488,41 @@ The latest session state points to Message 4 while preserving the complete gener
 
 ---
 
+
+
 # Development modules (todos)
 
 Build the generation-worker in this order. Each module: routes → controller → service → prisma.
 
 ## Checklist
 
-- [ ] **Models** — admin CRUD; public `GET` visible models (title, description, aspect/resolution lists); seed script
-- [ ] **Templates** — categories + thumbnail library; admin CRUD; public browse by category
-- [ ] **Sessions** — create / list / get thread; maintain `latest_*` pointers
+- [x] **Models** — admin CRUD; public `GET` visible models (title, description, aspect/resolution lists); seed script
+- [x] **Templates** — categories + thumbnail library; admin CRUD; public browse by category (`modules/gallery`)
+- [ ] **Sessions** — create / list / get thread; maintain `latest_`* pointers
 - [ ] **Messages** — user + assistant turns; validate `model_id`, aspect/resolution, refs; `reference_id` wiring
-- [ ] **Jobs / billing bridge** — `generation_jobs` + idempotency; wallet quote/reserve (sync); capture/release via events
-- [ ] **Prompt enhance** — module with `kind = prompt_enhance`; set `used_enhanced_prompt` / `enhanced_prompt`
-- [ ] **Providers (adapters)** — Gemini Interactions + OpenAI; shared `generate` / `edit` interface
-- [x] **Storage** — S3 upload for user refs + generated images
-- [ ] **Workers / consumers** — RabbitMQ: job → adapter → S3 → `completed` / `failed` events; update session head
-- [ ] **Internal HTTP + gateway** — `/internal/...` for gateway; public proxies (sessions, refine, poll, models, templates)
+- [x] **Jobs / billing bridge** — `generation_jobs` + idempotency; wallet quote/reserve (sync); capture/release via `generation.completed` / `generation.failed`
+- [x] **Prompt enhance** — sync `POST /api/enhance-prompt` with `kind = prompt_enhance`, system prompts registry, OpenAI enhancer
+  - [ ] Persist `enhanced_prompt` / `used_enhanced_prompt` on user messages (needs Sessions + Messages)
+- [ ] **Providers (adapters)** — Gemini Interactions + OpenAI shared `generate` / `edit` interface (OpenAI client used for enhance only today)
+- [x] **Storage** — S3 upload for user refs + template images (generated images path ready in storage folder)
+- [ ] **Workers / consumers** — RabbitMQ: image job → adapter → S3 → `completed` / `failed`; update session head
+- [x] **Internal HTTP + gateway** — uploads (`/internal/...`), models, templates/gallery, enhance-prompt, wallet quote/reserve/release
+  - [ ] Gateway proxies for sessions, generate/refine, poll
+
+
 
 ## Suggested folder layout
 
 ```
 src/
-  modules/models|templates|sessions|messages|jobs|enhance/
-  providers/gemini|openai/
+  modules/models|gallery|enhance|jobs|sessions|messages/
+  prompts/
+  providers/openai|gemini/
   storage/
   consumers/
-  routes/
+  lib/
 ```
+
 
 
 # AI Review
@@ -503,6 +537,8 @@ The review is informational only and never modifies the generated image.
 
 ---
 
+
+
 ## Responsibilities
 
 - Analyze generated thumbnails using a multimodal LLM
@@ -513,6 +549,8 @@ The review is informational only and never modifies the generated image.
 - Persist the review alongside the generation message
 
 ---
+
+
 
 ## Evaluation Criteria
 
@@ -531,6 +569,8 @@ The reviewer evaluates the image based on observable characteristics such as:
 The model is instructed to behave as an experienced thumbnail designer performing a professional design review rather than providing encouraging feedback.
 
 ---
+
+
 
 ## Review Workflow
 
@@ -563,6 +603,8 @@ Return Review
 ```
 
 ---
+
+
 
 ## Review Structure
 
@@ -603,6 +645,8 @@ review: {
 ```
 
 ---
+
+
 
 ## Future Integration
 

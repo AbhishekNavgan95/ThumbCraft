@@ -80,6 +80,7 @@ model GenerationSession {
   userId                   String        @map("user_id") @db.Uuid
   title                    String?
   category                 String?
+  // pinned                   Boolean       @default(false) @map("pinned") // add this column to the session table
   /// Gemini Interactions head (from latest successful assistant turn).
   latestInteractionId      String?       @map("latest_interaction_id")
   /// Most recent message in the thread (user or assistant).

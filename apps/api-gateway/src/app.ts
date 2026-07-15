@@ -13,6 +13,7 @@ import { registerGenerationRoutes } from "./routes/generations.js";
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerHistoryRoutes } from "./routes/history.js";
 import { registerModelRoutes } from "./routes/models.js";
+import { registerSessionRoutes } from "./routes/sessions.js";
 import { registerWalletRoutes } from "./routes/wallet.js";
 import "./types.js";
 
@@ -39,6 +40,7 @@ export async function createApp(config: GatewayConfig, logger: Logger) {
   await registerAuthRoutes(app, config);
   await registerWalletRoutes(app, config);
   await registerModelRoutes(app, config);
+  await registerSessionRoutes(app, config);
   await registerGalleryRoutes(app, config);
   await registerEnhanceRoutes(app, config);
   await registerGenerationRoutes(app, config);
