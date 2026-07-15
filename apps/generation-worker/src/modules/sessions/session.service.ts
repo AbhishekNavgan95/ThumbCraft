@@ -12,11 +12,13 @@ export interface CreateSessionInput {
 export interface UpdateSessionInput {
   title?: string | null;
   category?: string | null;
+  pinned?: boolean;
   status?: SessionStatus;
 }
 
 export interface ListSessionsOptions {
   status?: SessionStatus;
+  pinned?: boolean;
   limit?: number;
   offset?: number;
 }
@@ -48,6 +50,7 @@ export function toPublicSession(session: {
   userId: string;
   title: string | null;
   category: string | null;
+  pinned: boolean;
   latestInteractionId: string | null;
   latestMessageId: string | null;
   latestAssistantMessageId: string | null;
@@ -61,6 +64,7 @@ export function toPublicSession(session: {
     userId: session.userId,
     title: session.title,
     category: session.category,
+    pinned: session.pinned,
     latestInteractionId: session.latestInteractionId,
     latestMessageId: session.latestMessageId,
     latestAssistantMessageId: session.latestAssistantMessageId,
@@ -156,12 +160,13 @@ export async function listSessionsForUser(
   const where = {
     userId,
     ...(options.status ? { status: options.status } : {}),
+    ...(options.pinned !== undefined ? { pinned: options.pinned } : {}),
   };
 
   const [sessions, total] = await Promise.all([
     prisma.generationSession.findMany({
       where,
-      orderBy: { updatedAt: "desc" },
+      orderBy: [{ pinned: "desc" }, { updatedAt: "desc" }],
       take: limit,
       skip: offset,
       include: sessionWithCount,
@@ -201,6 +206,7 @@ export async function updateSessionForUser(
       ...(input.category !== undefined
         ? { category: resolveCategory(input.category) }
         : {}),
+      ...(input.pinned !== undefined ? { pinned: input.pinned } : {}),
       ...(input.status !== undefined ? { status: input.status } : {}),
     },
     include: sessionWithCount,

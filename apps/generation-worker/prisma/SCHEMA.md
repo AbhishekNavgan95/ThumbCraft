@@ -72,9 +72,10 @@ erDiagram
 | Field | `role = user` | `role = assistant` |
 |--------|----------------|---------------------|
 | `model_id` | FK → `generation_models` | same |
-| `original_prompt` | required | null |
-| `enhanced_prompt` | optional result text | null |
-| `used_enhanced_prompt` | label if enhance was used | `false` |
+| `original_prompt` | required — typed text only | null |
+| `enhanced_prompt` | optional enhance of typed text | null |
+| `used_enhanced_prompt` | which typed text was active | `false` |
+| `provider_input` | exact LLM `input` for this turn (null until dispatched) | null |
 | `preferences` | wizard filters | `{}` |
 | `reference_image_urls` | user / template refs | `[]` |
 | `reference_template_ids` | optional analytics | `[]` |
@@ -190,7 +191,8 @@ Re-runs update title/description/ratios/resolutions/sort; do **not** overwrite e
 |--------|------|--------|
 | `id` | UUID PK | |
 | `user_id` | UUID | |
-| `title` / `category` | TEXT? | |
+| `title` / `category` | TEXT? | defaults applied in API: `"New session"` / `"default"` |
+| `pinned` | BOOLEAN | default `false`; pinned sessions sort first in lists |
 | `latest_interaction_id` | TEXT? | Gemini head |
 | `latest_message_id` | UUID? | Soft pointer |
 | `latest_assistant_message_id` | UUID? | Soft pointer |
@@ -204,9 +206,9 @@ No `provider` / `model` on session — chosen per message via `model_id`.
 | Method | Path | Behavior |
 |--------|------|----------|
 | `POST` | `/api/sessions` | Ensure session: reuse oldest **active + 0 messages** if any; collapse extra empties; else create. Body optional `title` / `category` (defaults: `"New session"` / `"default"`). Response `{ session, reused }`; `201` if created, `200` if reused. |
-| `GET` | `/api/sessions` | List own sessions. Query: `status`, `limit` (1–100), `offset`. |
+| `GET` | `/api/sessions` | List own sessions (pinned first, then `updatedAt` desc). Query: `status`, `pinned`, `limit` (1–100), `offset`. |
 | `GET` | `/api/sessions/:sessionId` | Get one (ownership enforced). Includes `messageCount`. |
-| `PATCH` | `/api/sessions/:sessionId` | Update `title`, `category`, and/or `status`. |
+| `PATCH` | `/api/sessions/:sessionId` | Update `title`, `category`, `pinned`, and/or `status`. |
 | `DELETE` | `/api/sessions/:sessionId` | Delete session (messages cascade). |
 
 Silent frontend bootstrap should call `POST /api/sessions` with `{}` so every user has a default empty session without accumulating dead ones.
@@ -221,8 +223,9 @@ Silent frontend bootstrap should call `POST /api/sessions` with `{}` so every us
 | `session_id` | UUID FK | CASCADE |
 | `role` | `MessageRole` | |
 | `model_id` | UUID FK → `generation_models` | RESTRICT delete |
-| `original_prompt` / `enhanced_prompt` | TEXT? | user |
-| `used_enhanced_prompt` | BOOLEAN | user label |
+| `original_prompt` / `enhanced_prompt` | TEXT? | user-typed text only (enhance rewrites typed text, never assembly) |
+| `used_enhanced_prompt` | BOOLEAN | which typed text was active for the turn |
+| `provider_input` | TEXT? | exact string sent to image LLM; turn 1 = base+userText+prefs; later = userText only |
 | `preferences` | JSONB | user |
 | `reference_image_urls` | TEXT[] | user |
 | `reference_template_ids` | TEXT[] | optional analytics |

@@ -80,7 +80,8 @@ model GenerationSession {
   userId                   String        @map("user_id") @db.Uuid
   title                    String?
   category                 String?
-  // pinned                   Boolean       @default(false) @map("pinned") // add this column to the session table
+  /// User-pinned sessions surface first in lists.
+  pinned                   Boolean       @default(false)
   /// Gemini Interactions head (from latest successful assistant turn).
   latestInteractionId      String?       @map("latest_interaction_id")
   /// Most recent message in the thread (user or assistant).
@@ -96,14 +97,15 @@ model GenerationSession {
 
   @@index([userId], map: "idx_generation_sessions_user_id")
   @@index([userId, status], map: "idx_generation_sessions_user_status")
+  @@index([userId, pinned], map: "idx_generation_sessions_user_pinned")
   @@map("generation_sessions")
 }
 
 /// Generic chat message: user turns hold prompts; assistant turns hold image results.
 ///
 /// Role contract (null columns unused by role):
-/// - user: originalPrompt, enhancedPrompt?, usedEnhancedPrompt, preferences,
-///         referenceImageUrls, requiredAspectRatio, requiredResolution
+/// - user: originalPrompt, enhancedPrompt?, usedEnhancedPrompt, providerInput?,
+///         preferences, referenceImageUrls, requiredAspectRatio, requiredResolution
 /// - assistant: referenceId → user message, imageUrl + image meta, interactionId?, status, error?
 model GenerationMessage {
   id        String      @id @default(uuid()) @db.Uuid
@@ -113,11 +115,17 @@ model GenerationMessage {
   modelId   String      @map("model_id") @db.Uuid
 
   // ── user message fields ──────────────────────────────────────────
+  /// Exactly what the user typed (never overwritten by assembly / enhance).
   originalPrompt      String?  @map("original_prompt")
+  /// Enhance-feature rewrite of the typed text only (not base+preferences).
   enhancedPrompt      String?  @map("enhanced_prompt")
-  /// Label: whether this turn used the enhance-prompt module output.
+  /// Label: whether this turn used the enhance-prompt module output as active user text.
   usedEnhancedPrompt  Boolean  @default(false) @map("used_enhanced_prompt")
-  /// Wizard filters (category, mood, theme, etc.).
+  /// Exact string sent to the image LLM for this turn.
+  /// Turn 1: base system + (enhanced|original) + preferences.
+  /// Later turns: active user text only. Null until generation is dispatched.
+  providerInput       String?  @map("provider_input")
+  /// Wizard filters (niche, mood, visualStyle, etc.) — supporting parameters snapshot.
   preferences         Json     @default("{}")
   /// User-uploaded / prior / template reference image URLs (S3).
   referenceImageUrls  String[] @default([]) @map("reference_image_urls")

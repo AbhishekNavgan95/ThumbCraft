@@ -56,6 +56,13 @@ function parseUpdateInput(body: Record<string, unknown>): UpdateSessionInput {
     category: parseOptionalNullableString(body.category, "category"),
   };
 
+  if (body.pinned !== undefined) {
+    if (typeof body.pinned !== "boolean") {
+      throw new AppError("VALIDATION_ERROR", "pinned must be a boolean", 422);
+    }
+    input.pinned = body.pinned;
+  }
+
   if (body.status !== undefined) {
     if (
       typeof body.status !== "string" ||
@@ -73,11 +80,12 @@ function parseUpdateInput(body: Record<string, unknown>): UpdateSessionInput {
   if (
     input.title === undefined &&
     input.category === undefined &&
+    input.pinned === undefined &&
     input.status === undefined
   ) {
     throw new AppError(
       "VALIDATION_ERROR",
-      "Provide at least one field to update (title, category, status)",
+      "Provide at least one field to update (title, category, pinned, status)",
       422,
     );
   }
@@ -99,6 +107,21 @@ function parseListQuery(query: Record<string, unknown>) {
       );
     }
     status = query.status as SessionStatus;
+  }
+
+  let pinned: boolean | undefined;
+  if (query.pinned !== undefined) {
+    if (query.pinned === true || query.pinned === "true") {
+      pinned = true;
+    } else if (query.pinned === false || query.pinned === "false") {
+      pinned = false;
+    } else {
+      throw new AppError(
+        "VALIDATION_ERROR",
+        'pinned must be a boolean (true/false)',
+        422,
+      );
+    }
   }
 
   let limit: number | undefined;
@@ -129,7 +152,7 @@ function parseListQuery(query: Record<string, unknown>) {
     offset = raw as number;
   }
 
-  return { status, limit, offset };
+  return { status, pinned, limit, offset };
 }
 
 /**
