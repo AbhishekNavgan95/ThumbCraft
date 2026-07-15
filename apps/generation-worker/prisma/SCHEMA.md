@@ -203,7 +203,7 @@ No `provider` / `model` on session — chosen per message via `model_id`.
 
 | Method | Path | Behavior |
 |--------|------|----------|
-| `POST` | `/api/sessions` | Ensure session: reuse oldest **active + 0 messages** if any; collapse extra empties; else create. Body optional `title` / `category`. Response `{ session, reused }`; `201` if created, `200` if reused. |
+| `POST` | `/api/sessions` | Ensure session: reuse oldest **active + 0 messages** if any; collapse extra empties; else create. Body optional `title` / `category` (defaults: `"New session"` / `"default"`). Response `{ session, reused }`; `201` if created, `200` if reused. |
 | `GET` | `/api/sessions` | List own sessions. Query: `status`, `limit` (1–100), `offset`. |
 | `GET` | `/api/sessions/:sessionId` | Get one (ownership enforced). Includes `messageCount`. |
 | `PATCH` | `/api/sessions/:sessionId` | Update `title`, `category`, and/or `status`. |

@@ -27,6 +27,7 @@ export async function registerSessionRoutes(
     { preHandler: authHook },
     async (request, reply) => {
       const userId = request.user!.id;
+      // title/category optional — worker defaults to "New session" / "default"
       const body = (request.body ?? {}) as Record<string, unknown>;
       const result = await createSessionController(prisma, userId, body);
       return reply.status(result.reused ? 200 : 201).send(result);

@@ -21,6 +21,20 @@ export interface ListSessionsOptions {
   offset?: number;
 }
 
+/** Applied when client omits title/category (silent bootstrap / new chat). */
+export const DEFAULT_SESSION_TITLE = "New session";
+export const DEFAULT_SESSION_CATEGORY = "default";
+
+function resolveTitle(value?: string | null): string {
+  const trimmed = typeof value === "string" ? value.trim() : "";
+  return trimmed.length > 0 ? trimmed : DEFAULT_SESSION_TITLE;
+}
+
+function resolveCategory(value?: string | null): string {
+  const trimmed = typeof value === "string" ? value.trim() : "";
+  return trimmed.length > 0 ? trimmed : DEFAULT_SESSION_CATEGORY;
+}
+
 const sessionWithCount = {
   _count: { select: { messages: true } },
 } as const;
@@ -78,6 +92,7 @@ export async function findEmptyActiveSessions(
 /**
  * Create a session, or reuse (and collapse) an existing empty active session.
  * Frontend silent bootstrap should call this — never leaves multiple dead empties.
+ * Title/category are optional; defaults are "New session" / "default".
  */
 export async function ensureSession(
   prisma: PrismaClient,
@@ -95,18 +110,22 @@ export async function ensureSession(
       });
     }
 
-    const shouldPatch =
-      input.title !== undefined || input.category !== undefined;
+    const nextTitle =
+      input.title !== undefined
+        ? resolveTitle(input.title)
+        : resolveTitle(keep.title);
+    const nextCategory =
+      input.category !== undefined
+        ? resolveCategory(input.category)
+        : resolveCategory(keep.category);
 
-    const session = shouldPatch
+    const needsUpdate =
+      keep.title !== nextTitle || keep.category !== nextCategory;
+
+    const session = needsUpdate
       ? await prisma.generationSession.update({
           where: { id: keep.id },
-          data: {
-            ...(input.title !== undefined ? { title: input.title } : {}),
-            ...(input.category !== undefined
-              ? { category: input.category }
-              : {}),
-          },
+          data: { title: nextTitle, category: nextCategory },
           include: sessionWithCount,
         })
       : keep;
@@ -117,8 +136,8 @@ export async function ensureSession(
   const session = await prisma.generationSession.create({
     data: {
       userId,
-      title: input.title ?? null,
-      category: input.category ?? null,
+      title: resolveTitle(input.title),
+      category: resolveCategory(input.category),
     },
     include: sessionWithCount,
   });
@@ -178,8 +197,10 @@ export async function updateSessionForUser(
   return prisma.generationSession.update({
     where: { id: sessionId },
     data: {
-      ...(input.title !== undefined ? { title: input.title } : {}),
-      ...(input.category !== undefined ? { category: input.category } : {}),
+      ...(input.title !== undefined ? { title: resolveTitle(input.title) } : {}),
+      ...(input.category !== undefined
+        ? { category: resolveCategory(input.category) }
+        : {}),
       ...(input.status !== undefined ? { status: input.status } : {}),
     },
     include: sessionWithCount,

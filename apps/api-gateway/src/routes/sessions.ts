@@ -28,6 +28,7 @@ export async function registerSessionRoutes(
       },
       body: JSON.stringify(request.body ?? {}),
     });
+    app.log.info(`[SESSIONS] Session created: ${JSON.stringify(result.body)}`);
     return reply.status(result.status).send(result.body);
   });
 
