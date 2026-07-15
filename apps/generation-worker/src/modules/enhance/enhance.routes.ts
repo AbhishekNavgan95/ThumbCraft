@@ -10,13 +10,13 @@ export async function registerEnhanceRoutes(
   app: FastifyInstance,
   enhanceService: EnhanceService,
 ): Promise<void> {
+  const authHook = async (request: import("fastify").FastifyRequest) => {
+    await app.requireAuth(request);
+  };
+
   app.post(
     "/api/enhance-prompt",
-    {
-      preHandler: async (request) => {
-        await app.requireAuth(request);
-      },
-    },
+    { preHandler: authHook },
     async (request, reply) => {
       const body = await enhancePromptController(request, enhanceService);
       return reply.status(200).send(body);

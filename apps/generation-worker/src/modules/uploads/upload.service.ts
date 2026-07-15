@@ -1,5 +1,9 @@
 import { AppError } from "@platform/errors";
-import type { S3StorageService } from "../../storage/index.js";
+import type { GenerationWorkerConfig } from "../../config.js";
+import {
+  createS3StorageFromEnv,
+  type S3StorageService,
+} from "../../storage/index.js";
 
 const ALLOWED_MIME = new Set([
   "image/jpeg",
@@ -47,7 +51,19 @@ export interface TemplateUploadResult {
 }
 
 export class UploadService {
-  constructor(private readonly storage: S3StorageService) {}
+  private readonly storage: S3StorageService;
+
+  constructor(config: GenerationWorkerConfig) {
+    if (!config.AWS_S3_BUCKET?.trim()) {
+      throw new AppError(
+        "SERVICE_UNAVAILABLE",
+        "AWS_S3_BUCKET is not configured",
+        503,
+      );
+    }
+
+    this.storage = createS3StorageFromEnv(config);
+  }
 
   async uploadReferenceImage(
     input: ReferenceUploadInput,

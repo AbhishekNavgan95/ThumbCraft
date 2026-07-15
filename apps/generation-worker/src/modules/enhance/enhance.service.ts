@@ -7,22 +7,37 @@ import {
   publishGenerationFailed,
 } from "../../lib/events.js";
 import type { WalletClient, WalletUserHeaders } from "../../lib/wallet-client.js";
-import type { PromptEnhancer } from "../../providers/openai/prompt-enhancer.js";
+import { createOpenAIClient } from "../../providers/openai/openai.client.js";
+import { PromptEnhancer } from "../../providers/openai/prompt-enhancer.js";
 import {
   createGenerationJob,
   updateJobStatus,
 } from "../jobs/job.service.js";
 
 export class EnhanceService {
+  private readonly enhancer: PromptEnhancer;
+
   constructor(
     private readonly deps: {
       prisma: PrismaClient;
       rabbitmq: RabbitMQClient;
       wallet: WalletClient;
-      enhancer: PromptEnhancer;
       logger: Logger;
+      openaiApiKey?: string;
+      enhanceModel: string;
     },
-  ) {}
+  ) {
+    if (!deps.openaiApiKey?.trim()) {
+      throw new AppError(
+        "SERVICE_UNAVAILABLE",
+        "OPENAI_API_KEY is not configured",
+        503,
+      );
+    }
+
+    const openai = createOpenAIClient(deps.openaiApiKey);
+    this.enhancer = new PromptEnhancer(openai, deps.enhanceModel);
+  }
 
   async enhancePrompt(input: {
     user: WalletUserHeaders;
@@ -60,7 +75,7 @@ export class EnhanceService {
     await updateJobStatus(this.deps.prisma, job.id, "processing");
 
     try {
-      const result = await this.deps.enhancer.enhance(input.originalPrompt);
+      const result = await this.enhancer.enhance(input.originalPrompt);
 
       await publishGenerationCompleted(this.deps.rabbitmq, {
         userId: input.user.userId,
