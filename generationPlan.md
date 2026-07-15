@@ -489,3 +489,155 @@ src/
   consumers/
   routes/
 ```
+
+
+# AI Review
+
+The AI Review module provides an objective design critique for every generated image.
+
+Instead of simply complimenting the output, the review model evaluates the thumbnail using common design principles associated with high-performing content and returns structured feedback that can help users iteratively improve their designs.
+
+Every review is attached to the corresponding `GenerationMessage`, allowing users to revisit previous critiques without requiring another LLM request.
+
+The review is informational only and never modifies the generated image.
+
+---
+
+## Responsibilities
+
+- Analyze generated thumbnails using a multimodal LLM
+- Evaluate composition and visual quality
+- Score the thumbnail across multiple categories
+- Identify strengths and weaknesses
+- Suggest concrete improvements
+- Persist the review alongside the generation message
+
+---
+
+## Evaluation Criteria
+
+The reviewer evaluates the image based on observable characteristics such as:
+
+- Subject visibility
+- Composition
+- Readability
+- Text placement
+- Color contrast
+- Visual hierarchy
+- Mobile friendliness
+- Emotional impact
+- Overall click-through potential
+
+The model is instructed to behave as an experienced thumbnail designer performing a professional design review rather than providing encouraging feedback.
+
+---
+
+## Review Workflow
+
+```
+Generated Image
+
+↓
+
+Load Image from S3
+
+↓
+
+Vision Model Review
+
+↓
+
+Structured Analysis
+
+↓
+
+Persist Review
+
+↓
+
+Attach Review to GenerationMessage
+
+↓
+
+Return Review
+```
+
+---
+
+## Review Structure
+
+```ts
+review: {
+
+    provider,
+
+    reviewedAt,
+
+    overallScore,
+
+    scores: {
+
+        composition,
+
+        readability,
+
+        subjectVisibility,
+
+        colorContrast,
+
+        mobileVisibility,
+
+        emotionalImpact
+
+    },
+
+    strengths: [],
+
+    weaknesses: [],
+
+    suggestedEdits: [],
+
+    rawResponse
+
+}
+```
+
+---
+
+## Future Integration
+
+The review remains attached to the generated image and serves as persistent metadata.
+
+Future versions of the Generation Worker can convert suggested improvements into one-click editing actions.
+
+Example:
+
+```
+Review
+
+↓
+
+Suggested Edit
+
+↓
+
+Increase text size
+
+↓
+
+User clicks Apply
+
+↓
+
+Create New Generation Message
+
+↓
+
+Continue Existing Interaction
+
+↓
+
+Generate Updated Image
+```
+
+This design keeps every review associated with the exact generation that produced it while enabling future AI-assisted editing workflows without requiring changes to the underlying session architecture.
