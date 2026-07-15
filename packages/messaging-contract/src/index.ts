@@ -46,11 +46,18 @@ export interface GenerationRequestedPayload {
   coinCost: number;
 }
 
+export type GenerationJobKindPayload = "generation" | "prompt_enhance";
+
 export interface GenerationCompletedPayload {
-  imageUrls: string[];
+  kind: GenerationJobKindPayload;
+  /** Present for image generation jobs. */
+  imageUrls?: string[];
+  /** Present for prompt_enhance jobs. */
+  enhancedPrompt?: string;
 }
 
 export interface GenerationFailedPayload {
+  kind: GenerationJobKindPayload;
   error: string;
 }
 

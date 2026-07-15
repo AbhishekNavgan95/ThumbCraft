@@ -41,6 +41,57 @@ export async function registerWalletRoutes(
   );
 
   app.post(
+    "/api/wallet/quote",
+    { preHandler: authHook },
+    async (request, reply) => {
+      const result = await proxyJson(`${config.WALLET_SERVICE_URL}/api/wallet/quote`, {
+        method: "POST",
+        headers: {
+          ...buildDownstreamHeaders(request),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(request.body),
+      });
+
+      return reply.status(result.status).send(result.body);
+    },
+  );
+
+  app.post(
+    "/api/wallet/reserve",
+    { preHandler: authHook },
+    async (request, reply) => {
+      const result = await proxyJson(`${config.WALLET_SERVICE_URL}/api/wallet/reserve`, {
+        method: "POST",
+        headers: {
+          ...buildDownstreamHeaders(request),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(request.body),
+      });
+
+      return reply.status(result.status).send(result.body);
+    },
+  );
+
+  app.post(
+    "/api/wallet/release",
+    { preHandler: authHook },
+    async (request, reply) => {
+      const result = await proxyJson(`${config.WALLET_SERVICE_URL}/api/wallet/release`, {
+        method: "POST",
+        headers: {
+          ...buildDownstreamHeaders(request),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(request.body),
+      });
+
+      return reply.status(result.status).send(result.body);
+    },
+  );
+
+  app.post(
     "/api/wallet/checkout",
     { preHandler: authHook },
     async (request, reply) => {

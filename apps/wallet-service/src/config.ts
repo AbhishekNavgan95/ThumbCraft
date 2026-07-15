@@ -12,6 +12,8 @@ export const configSchema = baseServiceSchema.extend({
     .default("http://localhost:5173/wallet?checkout=success&session_id={CHECKOUT_SESSION_ID}"),
   STRIPE_CANCEL_URL: z.string().url().default("http://localhost:5173/wallet?checkout=cancel"),
   WELCOME_BONUS_COINS: z.coerce.number().int().nonnegative().default(50),
+  /** Fixed coin price for prompt enhancement until model_pricing exists. */
+  PROMPT_ENHANCE_COIN_COST: z.coerce.number().int().positive().default(1),
 });
 
 export type WalletServiceConfig = z.infer<typeof configSchema>;

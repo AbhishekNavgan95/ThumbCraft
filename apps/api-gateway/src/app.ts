@@ -7,6 +7,7 @@ import type { GatewayConfig } from "./config.js";
 import { registerAuthPlugin } from "./plugins/auth.js";
 import { registerErrorHandler } from "./plugins/error-handler.js";
 import { registerAuthRoutes } from "./routes/auth.js";
+import { registerEnhanceRoutes } from "./routes/enhance.js";
 import { registerGalleryRoutes } from "./routes/gallery.js";
 import { registerGenerationRoutes } from "./routes/generations.js";
 import { registerHealthRoutes } from "./routes/health.js";
@@ -39,6 +40,7 @@ export async function createApp(config: GatewayConfig, logger: Logger) {
   await registerWalletRoutes(app, config);
   await registerModelRoutes(app, config);
   await registerGalleryRoutes(app, config);
+  await registerEnhanceRoutes(app, config);
   await registerGenerationRoutes(app, config);
   await registerHistoryRoutes(app, config);
 

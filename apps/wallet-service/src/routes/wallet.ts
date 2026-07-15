@@ -3,6 +3,11 @@ import type { FastifyInstance } from "fastify";
 import type { PrismaClient } from "../generated/prisma/client.js";
 import type Stripe from "stripe";
 import type { WalletServiceConfig } from "../config.js";
+import {
+  quoteBilling,
+  releaseBilling,
+  reserveBilling,
+} from "../controllers/billing.controller.js";
 import { getWalletBalance } from "../controllers/wallet.controller.js";
 import {
   createPackage,
@@ -37,6 +42,50 @@ export async function registerWalletRoutes(
     },
     async (request, reply) => {
       const result = await getWalletBalance(prisma, request.user!.id);
+      return reply.status(200).send(result);
+    },
+  );
+
+  app.post(
+    "/api/wallet/quote",
+    {
+      preHandler: async (request) => {
+        await app.requireAuth(request);
+      },
+    },
+    async (request, reply) => {
+      const body = (request.body ?? {}) as Record<string, unknown>;
+      const result = quoteBilling(body, config.PROMPT_ENHANCE_COIN_COST);
+      return reply.status(200).send(result);
+    },
+  );
+
+  app.post(
+    "/api/wallet/reserve",
+    {
+      preHandler: async (request) => {
+        await app.requireAuth(request);
+      },
+    },
+    async (request, reply) => {
+      const body = (request.body ?? {}) as Record<string, unknown>;
+      const result = await reserveBilling(prisma, request.user!.id, body);
+      return reply.status(200).send(result);
+    },
+  );
+
+  /** Sync compensation path (e.g. gateway/worker before event publish). */
+  app.post(
+    "/api/wallet/release",
+    {
+      preHandler: async (request) => {
+        await app.requireAuth(request);
+      },
+    },
+    async (request, reply) => {
+      const body = (request.body ?? {}) as { jobId?: string };
+      const jobId = body.jobId ?? "";
+      const result = await releaseBilling(prisma, request.user!.id, jobId);
       return reply.status(200).send(result);
     },
   );

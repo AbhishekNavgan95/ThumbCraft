@@ -5,6 +5,13 @@ export const configSchema = baseServiceSchema.extend({
   DATABASE_URL: z.string().url(),
   RABBITMQ_URL: z.string().url(),
 
+  /** Wallet service base URL for sync quote/reserve (capture/release via events). */
+  WALLET_SERVICE_URL: z.string().url().default("http://localhost:3002"),
+
+  OPENAI_API_KEY: z.string().optional(),
+  /** Chat model used for prompt enhancement. */
+  OPENAI_ENHANCE_MODEL: z.string().min(1).default("gpt-5-mini"),
+
   AWS_REGION: z.string().min(1).default("us-east-1"),
   AWS_S3_BUCKET: z.string().min(1).optional(),
   /** Optional when using instance/profile IAM role. */
