@@ -3,12 +3,13 @@
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "dev": "pnpm --filter \"./packages/*\" build && pnpm --filter \"./apps/*\" --parallel dev",
-    "dev:watch": "pnpm -r --parallel dev",
+    "dev": "turbo run dev --filter=./apps/* --parallel",
+    "dev:watch": "turbo run dev --parallel",
     "dev:stop": "node infra/scripts/kill-dev-ports.mjs",
-    "build": "pnpm -r build",
-    "lint": "pnpm -r lint",
-    "typecheck": "pnpm -r typecheck",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
     "infra:up": "docker compose up -d",
     "infra:down": "docker compose down",
     "infra:bootstrap": "node infra/scripts/bootstrap-rabbitmq.mjs"
@@ -17,6 +18,7 @@
     "node": ">=20.19.0"
   },
   "devDependencies": {
-    "amqplib": "^0.10.5"
+    "amqplib": "^0.10.5",
+    "turbo": "^2.10.5"
   }
 }
