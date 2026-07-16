@@ -1,0 +1,973 @@
+{
+  "id": "3GaCPJTUVC7e3KSGxdTNnbAmDri",
+  "version": "1",
+  "turboVersion": "2.10.5",
+  "monorepo": true,
+  "globalCacheInputs": {
+    "rootKey": "I can’t see ya, but I know you’re here",
+    "files": {},
+    "hashOfExternalDependencies": "993ddc1c776e36a0",
+    "hashOfInternalDependencies": "",
+    "environmentVariables": {
+      "specified": {
+        "env": [],
+        "passThroughEnv": null
+      },
+      "configured": [],
+      "inferred": [],
+      "passthrough": null
+    },
+    "engines": {
+      "node": ">=20.19.0"
+    }
+  },
+  "packages": [
+    "@platform/config",
+    "@platform/errors",
+    "@platform/logger",
+    "@platform/messaging-contract",
+    "@platform/rabbitmq-client",
+    "@thumbcraft/api-gateway",
+    "@thumbcraft/auth-service",
+    "@thumbcraft/generation-worker",
+    "@thumbcraft/notification-service",
+    "@thumbcraft/wallet-service",
+    "@thumbcraft/web"
+  ],
+  "envMode": "strict",
+  "frameworkInference": true,
+  "tasks": [
+    {
+      "taskId": "@platform/config#build",
+      "task": "build",
+      "package": "@platform/config",
+      "hash": "8202ab22168655ca",
+      "inputs": {
+        "package.json": "2e1bd8268e0c69987e04e8ef41c905fd80ba78c3",
+        "src/index.ts": "e6595e4206fc2f676a54c9ba66be3fbad65065fa",
+        "tsconfig.json": "4b1980de740ca2e5664f997a9256d8829a905864"
+      },
+      "hashOfExternalDependencies": "7fd2590e39a178ca",
+      "cache": {
+        "local": false,
+        "remote": false,
+        "status": "MISS",
+        "timeSaved": 0
+      },
+      "command": "tsc",
+      "cliArguments": [],
+      "outputs": [
+        "dist/**",
+        "src/generated/**"
+      ],
+      "excludedOutputs": null,
+      "logFile": "packages\\config\\.turbo\\turbo-build.log",
+      "directory": "packages\\config",
+      "dependencies": [],
+      "dependents": [
+        "@thumbcraft/api-gateway#build",
+        "@thumbcraft/auth-service#build",
+        "@thumbcraft/generation-worker#build",
+        "@thumbcraft/notification-service#build",
+        "@thumbcraft/wallet-service#build"
+      ],
+      "with": [],
+      "resolvedTaskDefinition": {
+        "outputs": [
+          "dist/**",
+          "src/generated/**"
+        ],
+        "cache": true,
+        "dependsOn": [
+          "^build"
+        ],
+        "inputs": [
+          ".env*"
+        ],
+        "outputLogs": "full",
+        "persistent": false,
+        "interruptible": false,
+        "env": [],
+        "passThroughEnv": null,
+        "interactive": false
+      },
+      "expandedOutputs": [],
+      "framework": "",
+      "envMode": "strict",
+      "environmentVariables": {
+        "specified": {
+          "env": [],
+          "passThroughEnv": null
+        },
+        "configured": [],
+        "inferred": [],
+        "passthrough": null
+      }
+    },
+    {
+      "taskId": "@platform/errors#build",
+      "task": "build",
+      "package": "@platform/errors",
+      "hash": "e52e1c6c119f38ae",
+      "inputs": {
+        "package.json": "f257fe4dd612305e965832e78a8c4c64c6af0890",
+        "src/index.ts": "a4fbda88e86b0522d981d1beab8a2cbadfe2bb3b",
+        "tsconfig.json": "8f24167afd41ead8cdb40d067264ea54e4cbdc62"
+      },
+      "hashOfExternalDependencies": "0bde8565d3bbe864",
+      "cache": {
+        "local": false,
+        "remote": false,
+        "status": "MISS",
+        "timeSaved": 0
+      },
+      "command": "tsc",
+      "cliArguments": [],
+      "outputs": [
+        "dist/**",
+        "src/generated/**"
+      ],
+      "excludedOutputs": null,
+      "logFile": "packages\\errors\\.turbo\\turbo-build.log",
+      "directory": "packages\\errors",
+      "dependencies": [],
+      "dependents": [
+        "@thumbcraft/api-gateway#build",
+        "@thumbcraft/auth-service#build",
+        "@thumbcraft/generation-worker#build",
+        "@thumbcraft/notification-service#build",
+        "@thumbcraft/wallet-service#build"
+      ],
+      "with": [],
+      "resolvedTaskDefinition": {
+        "outputs": [
+          "dist/**",
+          "src/generated/**"
+        ],
+        "cache": true,
+        "dependsOn": [
+          "^build"
+        ],
+        "inputs": [
+          ".env*"
+        ],
+        "outputLogs": "full",
+        "persistent": false,
+        "interruptible": false,
+        "env": [],
+        "passThroughEnv": null,
+        "interactive": false
+      },
+      "expandedOutputs": [],
+      "framework": "",
+      "envMode": "strict",
+      "environmentVariables": {
+        "specified": {
+          "env": [],
+          "passThroughEnv": null
+        },
+        "configured": [],
+        "inferred": [],
+        "passthrough": null
+      }
+    },
+    {
+      "taskId": "@platform/logger#build",
+      "task": "build",
+      "package": "@platform/logger",
+      "hash": "eccca587ef7afdab",
+      "inputs": {
+        "package.json": "cc1bf5747119212fa53cb185e34ad58e4962b7ec",
+        "src/index.ts": "8847aa9520c6ab0dc9df32af49605ba3b87b790b",
+        "tsconfig.json": "8f24167afd41ead8cdb40d067264ea54e4cbdc62"
+      },
+      "hashOfExternalDependencies": "4604a9af36551778",
+      "cache": {
+        "local": false,
+        "remote": false,
+        "status": "MISS",
+        "timeSaved": 0
+      },
+      "command": "tsc",
+      "cliArguments": [],
+      "outputs": [
+        "dist/**",
+        "src/generated/**"
+      ],
+      "excludedOutputs": null,
+      "logFile": "packages\\logger\\.turbo\\turbo-build.log",
+      "directory": "packages\\logger",
+      "dependencies": [],
+      "dependents": [
+        "@thumbcraft/api-gateway#build",
+        "@thumbcraft/auth-service#build",
+        "@thumbcraft/generation-worker#build",
+        "@thumbcraft/notification-service#build",
+        "@thumbcraft/wallet-service#build"
+      ],
+      "with": [],
+      "resolvedTaskDefinition": {
+        "outputs": [
+          "dist/**",
+          "src/generated/**"
+        ],
+        "cache": true,
+        "dependsOn": [
+          "^build"
+        ],
+        "inputs": [
+          ".env*"
+        ],
+        "outputLogs": "full",
+        "persistent": false,
+        "interruptible": false,
+        "env": [],
+        "passThroughEnv": null,
+        "interactive": false
+      },
+      "expandedOutputs": [],
+      "framework": "",
+      "envMode": "strict",
+      "environmentVariables": {
+        "specified": {
+          "env": [],
+          "passThroughEnv": null
+        },
+        "configured": [],
+        "inferred": [],
+        "passthrough": null
+      }
+    },
+    {
+      "taskId": "@platform/messaging-contract#build",
+      "task": "build",
+      "package": "@platform/messaging-contract",
+      "hash": "c440f893bc2d876a",
+      "inputs": {
+        "package.json": "d952a81eb9f066545591859079db998d4932576b",
+        "src/index.ts": "36e53ba68e220c69bc36b0294f46c15088ac7b6a",
+        "tsconfig.json": "8f24167afd41ead8cdb40d067264ea54e4cbdc62"
+      },
+      "hashOfExternalDependencies": "0bde8565d3bbe864",
+      "cache": {
+        "local": false,
+        "remote": false,
+        "status": "MISS",
+        "timeSaved": 0
+      },
+      "command": "tsc",
+      "cliArguments": [],
+      "outputs": [
+        "dist/**",
+        "src/generated/**"
+      ],
+      "excludedOutputs": null,
+      "logFile": "packages\\messaging-contract\\.turbo\\turbo-build.log",
+      "directory": "packages\\messaging-contract",
+      "dependencies": [],
+      "dependents": [
+        "@platform/rabbitmq-client#build",
+        "@thumbcraft/api-gateway#build",
+        "@thumbcraft/auth-service#build",
+        "@thumbcraft/generation-worker#build",
+        "@thumbcraft/notification-service#build",
+        "@thumbcraft/wallet-service#build"
+      ],
+      "with": [],
+      "resolvedTaskDefinition": {
+        "outputs": [
+          "dist/**",
+          "src/generated/**"
+        ],
+        "cache": true,
+        "dependsOn": [
+          "^build"
+        ],
+        "inputs": [
+          ".env*"
+        ],
+        "outputLogs": "full",
+        "persistent": false,
+        "interruptible": false,
+        "env": [],
+        "passThroughEnv": null,
+        "interactive": false
+      },
+      "expandedOutputs": [],
+      "framework": "",
+      "envMode": "strict",
+      "environmentVariables": {
+        "specified": {
+          "env": [],
+          "passThroughEnv": null
+        },
+        "configured": [],
+        "inferred": [],
+        "passthrough": null
+      }
+    },
+    {
+      "taskId": "@platform/rabbitmq-client#build",
+      "task": "build",
+      "package": "@platform/rabbitmq-client",
+      "hash": "338d9597161769f8",
+      "inputs": {
+        "package.json": "78db74ba8ee6a1a010208dcd964fd4e7d92dbddf",
+        "src/index.ts": "a350c76ec1eff37ae3e4048ace03c3b67644f2d6",
+        "tsconfig.json": "8f24167afd41ead8cdb40d067264ea54e4cbdc62"
+      },
+      "hashOfExternalDependencies": "3c71a3dcc89db726",
+      "cache": {
+        "local": false,
+        "remote": false,
+        "status": "MISS",
+        "timeSaved": 0
+      },
+      "command": "tsc",
+      "cliArguments": [],
+      "outputs": [
+        "dist/**",
+        "src/generated/**"
+      ],
+      "excludedOutputs": null,
+      "logFile": "packages\\rabbitmq-client\\.turbo\\turbo-build.log",
+      "directory": "packages\\rabbitmq-client",
+      "dependencies": [
+        "@platform/messaging-contract#build"
+      ],
+      "dependents": [
+        "@thumbcraft/api-gateway#build",
+        "@thumbcraft/auth-service#build",
+        "@thumbcraft/generation-worker#build",
+        "@thumbcraft/notification-service#build",
+        "@thumbcraft/wallet-service#build"
+      ],
+      "with": [],
+      "resolvedTaskDefinition": {
+        "outputs": [
+          "dist/**",
+          "src/generated/**"
+        ],
+        "cache": true,
+        "dependsOn": [
+          "^build"
+        ],
+        "inputs": [
+          ".env*"
+        ],
+        "outputLogs": "full",
+        "persistent": false,
+        "interruptible": false,
+        "env": [],
+        "passThroughEnv": null,
+        "interactive": false
+      },
+      "expandedOutputs": [],
+      "framework": "",
+      "envMode": "strict",
+      "environmentVariables": {
+        "specified": {
+          "env": [],
+          "passThroughEnv": null
+        },
+        "configured": [],
+        "inferred": [],
+        "passthrough": null
+      }
+    },
+    {
+      "taskId": "@thumbcraft/api-gateway#build",
+      "task": "build",
+      "package": "@thumbcraft/api-gateway",
+      "hash": "8a0a6fb7ee6bf34c",
+      "inputs": {
+        ".env.example": "6ffffe6ef585b9a52a16dc7b3cd327faabfb2b53",
+        "package.json": "8a341737340e9bc1881150ea5361b0220e3fb610",
+        "src/app.ts": "f08d4537e001e7097c61f88a0e619896800adec3",
+        "src/config.ts": "b41aa097270056cbbf53e8a54312c90d9c649c27",
+        "src/index.ts": "7ada18407aa62a42c40e6d5cb117e5042888e91f",
+        "src/lib/http-client.ts": "a570a665533d5b4e4b33971fdb7162e093f14b50",
+        "src/lib/multipart.ts": "386dcffc1db92f4a3572c4da5024f54027aceb82",
+        "src/plugins/auth.ts": "68449ea41288f4d6440b96d1e7b5459ff55ed9e3",
+        "src/plugins/error-handler.ts": "8fc277568c6e79081d61d22d47a1232eda63745c",
+        "src/routes/auth.ts": "e1fe4d010138d8bd9a9ea08d142679052afe9945",
+        "src/routes/enhance.ts": "088edda28681c1ce9ed4b015029503de69012e22",
+        "src/routes/gallery.ts": "9d25f639c07dbc2e6a17f756a66881ab3a664527",
+        "src/routes/generations.ts": "cc110942a8d7b91b5e66b8ce9c483c6a313a8353",
+        "src/routes/health.ts": "673dbe8e92231a27b2cc19871ff72151540f3009",
+        "src/routes/history.ts": "3b9dd42c7f9ab1bba72edef722f370ba87ad6392",
+        "src/routes/models.ts": "8198b2bb62c49e966ac545b6c94c95f663421b7a",
+        "src/routes/sessions.ts": "69f902b5bd9a35823d493bd7fa942f7fc82108f9",
+        "src/routes/wallet.ts": "43d315dad2b82d5ab49adf4d44568bdc1334112b",
+        "src/types.ts": "b2e3fd673c8cb9c0f1050f500f1038c25f6389a8",
+        "tsconfig.json": "8f24167afd41ead8cdb40d067264ea54e4cbdc62"
+      },
+      "hashOfExternalDependencies": "9ebb2d3dc2f52910",
+      "cache": {
+        "local": false,
+        "remote": false,
+        "status": "MISS",
+        "timeSaved": 0
+      },
+      "command": "tsc",
+      "cliArguments": [],
+      "outputs": [
+        "dist/**",
+        "src/generated/**"
+      ],
+      "excludedOutputs": null,
+      "logFile": "apps\\api-gateway\\.turbo\\turbo-build.log",
+      "directory": "apps\\api-gateway",
+      "dependencies": [
+        "@platform/config#build",
+        "@platform/errors#build",
+        "@platform/logger#build",
+        "@platform/messaging-contract#build",
+        "@platform/rabbitmq-client#build"
+      ],
+      "dependents": [],
+      "with": [],
+      "resolvedTaskDefinition": {
+        "outputs": [
+          "dist/**",
+          "src/generated/**"
+        ],
+        "cache": true,
+        "dependsOn": [
+          "^build"
+        ],
+        "inputs": [
+          ".env*"
+        ],
+        "outputLogs": "full",
+        "persistent": false,
+        "interruptible": false,
+        "env": [],
+        "passThroughEnv": null,
+        "interactive": false
+      },
+      "expandedOutputs": [],
+      "framework": "",
+      "envMode": "strict",
+      "environmentVariables": {
+        "specified": {
+          "env": [],
+          "passThroughEnv": null
+        },
+        "configured": [],
+        "inferred": [],
+        "passthrough": null
+      }
+    },
+    {
+      "taskId": "@thumbcraft/auth-service#build",
+      "task": "build",
+      "package": "@thumbcraft/auth-service",
+      "hash": "89a3943825495da7",
+      "inputs": {
+        ".env": "792726ca1aa99aab6fa16c9fca7b7adae9cc469d",
+        ".env.example": "f5087134eeb2e9daf432401bc8a5a83cde64b8a4",
+        "package.json": "b9128d848ca81d1194436aa32a28eadd483d5244",
+        "prisma.config.ts": "d73df7b3168760f0302beca0ec1b19fd18dc1472",
+        "prisma/migrations/20250712000000_init/migration.sql": "5c4957bdae68a428a3738cbe23fe0e6888f5d35d",
+        "prisma/migrations/20260713000000_add_user_role/migration.sql": "d434109c99246f58cff613b5a0fa2cb715c507fd",
+        "prisma/migrations/migration_lock.toml": "99e4f2009079447bfe87fb47e52dcb038d1aec08",
+        "prisma/schema.prisma": "d66ebfa432e24cbd36329e306eb665626672b054",
+        "src/config.ts": "b8009ed56c81d2c1c95d3e294e4118309c25f898",
+        "src/controllers/admin-register.controller.ts": "7e9f28c69966a484329088f96a70b4af51b597bb",
+        "src/controllers/login.controller.ts": "11cc73dc20297bb33145a158333919da862b09a1",
+        "src/controllers/profile.controller.ts": "193ea264f75c9a2187c0213b3f69fa0221487b03",
+        "src/controllers/signup.controller.ts": "49fb5e1fb171eda3e2f39ef12e04bea13f174a59",
+        "src/controllers/verify-otp.controller.ts": "5a98b249ef1e79738ba652e7131c4176d29fa235",
+        "src/db/index.ts": "c9fd94b88435ca0f66a8d682c41c8e549d80fd71",
+        "src/index.ts": "4fd1160311edfb477c9c735edcb79ab65d88f910",
+        "src/plugins/auth.ts": "6afaf569423e7f63bea06f9a326049a109572560",
+        "src/plugins/error-handler.ts": "9bdd48c58c482e323a3910e69c5df4b930330183",
+        "src/routes/auth.ts": "393a48f3b3f1aec325b6e539ba20cae9c6b9b657",
+        "src/services/otp.service.ts": "eeb7cd6d6a286669c053df42b234f1ce2a9b4b45",
+        "src/services/password.service.ts": "d4df25d2651ddd97fc2c8fa2a6647e5c7ff08b0f",
+        "src/services/token.service.ts": "1c8d015d59f8e86cfe98c3f131cdae91e6995b44",
+        "src/services/user.service.ts": "b510c58bef5247dfa81d29fdbbd1315c58241141",
+        "src/types.ts": "3b0345d7b0dfce5232cbe99be1840820e661c0bc",
+        "tsconfig.json": "8f24167afd41ead8cdb40d067264ea54e4cbdc62"
+      },
+      "hashOfExternalDependencies": "d5460ac30fedbaf0",
+      "cache": {
+        "local": false,
+        "remote": false,
+        "status": "MISS",
+        "timeSaved": 0
+      },
+      "command": "prisma generate && tsc",
+      "cliArguments": [],
+      "outputs": [
+        "dist/**",
+        "src/generated/**"
+      ],
+      "excludedOutputs": null,
+      "logFile": "apps\\auth-service\\.turbo\\turbo-build.log",
+      "directory": "apps\\auth-service",
+      "dependencies": [
+        "@platform/config#build",
+        "@platform/errors#build",
+        "@platform/logger#build",
+        "@platform/messaging-contract#build",
+        "@platform/rabbitmq-client#build"
+      ],
+      "dependents": [],
+      "with": [],
+      "resolvedTaskDefinition": {
+        "outputs": [
+          "dist/**",
+          "src/generated/**"
+        ],
+        "cache": true,
+        "dependsOn": [
+          "^build"
+        ],
+        "inputs": [
+          ".env*"
+        ],
+        "outputLogs": "full",
+        "persistent": false,
+        "interruptible": false,
+        "env": [],
+        "passThroughEnv": null,
+        "interactive": false
+      },
+      "expandedOutputs": [],
+      "framework": "",
+      "envMode": "strict",
+      "environmentVariables": {
+        "specified": {
+          "env": [],
+          "passThroughEnv": null
+        },
+        "configured": [],
+        "inferred": [],
+        "passthrough": null
+      }
+    },
+    {
+      "taskId": "@thumbcraft/generation-worker#build",
+      "task": "build",
+      "package": "@thumbcraft/generation-worker",
+      "hash": "31e6e7eb766187a8",
+      "inputs": {
+        ".env": "25e64bf458c3455317eaa21cfe0f9333767e831c",
+        ".env.example": "df8170365bc577cb57c34802595571bcda511196",
+        "package.json": "5f98a19be2ce5d7e1ad1007122e00ffda86df628",
+        "prisma.config.ts": "d73df7b3168760f0302beca0ec1b19fd18dc1472",
+        "prisma/SCHEMA.md": "3d7027fa9b4a31be8aca507610809ca85c0fc4d4",
+        "prisma/migrations/20260714100000_init/migration.sql": "29b71f6b24f99d2c65ad84cf6a44ef7c300e1527",
+        "prisma/migrations/migration_lock.toml": "99e4f2009079447bfe87fb47e52dcb038d1aec08",
+        "prisma/schema.prisma": "243e710074e9126269f683b621aacec582d96339",
+        "prisma/seed-models.ts": "5b7490220982d61931ad5b7aab0275dd31c8009c",
+        "src/app.ts": "b4fed27d71984a724c6e50e6ceda466555e3ae83",
+        "src/config.ts": "d736b9ef125b84d9a09ede9943ee0a46aaf93af5",
+        "src/db/index.ts": "c9fd94b88435ca0f66a8d682c41c8e549d80fd71",
+        "src/index.ts": "10fce4229189657675e97f63cca51ae829d8d1a2",
+        "src/lib/events.ts": "088cc3bf5d2c2e644f21efcd2838b1c0d432fc69",
+        "src/lib/gateway-user.ts": "7a9644f7c7a2a77e1e5d89661faa3199df1cef51",
+        "src/lib/wallet-client.ts": "07ba0abf131e66196dabe7053b07562a9dcd5b83",
+        "src/modules/enhance/enhance.controller.ts": "f8c478b2daab4facf142f25e6a309ff1e270bdd6",
+        "src/modules/enhance/enhance.routes.ts": "cf1af5b35258f87299e54b9c4febd2a70da48383",
+        "src/modules/enhance/enhance.service.ts": "655a83799fc4d5b6ccacda9dd07c6935f5017533",
+        "src/modules/gallery/category.controller.ts": "d7884737300166cb043a8245d7a26d0d620f5ab6",
+        "src/modules/gallery/category.service.ts": "2ba551f896e7f5a14db5681554523f2bf5b015ca",
+        "src/modules/gallery/gallery.routes.ts": "19f3337f1e5aa5fa1bf5461ca99b9bd1823a24c8",
+        "src/modules/gallery/template.controller.ts": "777c9fa0248b31334ab404bf8fb1e9970cb921ae",
+        "src/modules/gallery/template.service.ts": "b649722beb2f6cb62760c837f61719130338712d",
+        "src/modules/health/health.routes.ts": "5b51fb7ebb38866e6da3762347f58802100641ca",
+        "src/modules/jobs/job.service.ts": "04bf67c68c9fb7d42df4bd46c385a0056d5dd239",
+        "src/modules/models/model.controller.ts": "88820e68735c20876b83aad07500eb3b5ed1512e",
+        "src/modules/models/model.routes.ts": "f885f8053981d1c8fbe1467c151dc4ff996e48c4",
+        "src/modules/models/model.service.ts": "bbd5408cc0e7e0b3530456663cbcc584368ba5b0",
+        "src/modules/sessions/session.controller.ts": "3c7a54b21bbaa6f584804d02046cb8628cf892a3",
+        "src/modules/sessions/session.routes.ts": "7b8470f30811901d3b7f8aa48c1ac9747e7d52a8",
+        "src/modules/sessions/session.service.ts": "a3a7d7b419dd4ff1b86c332da9690dcb0a829e62",
+        "src/modules/uploads/upload.controller.ts": "486b39041601693cafc9efc5762eaae1ec82697b",
+        "src/modules/uploads/upload.routes.ts": "4fcebbc059f92b9b46e8f8c1650358d4ccc57c8c",
+        "src/modules/uploads/upload.service.ts": "206a669c4a67efa044c4cee6ac117eab6c6d2739",
+        "src/plugins/auth.ts": "7977a9769ae7e3325d3afe49b99ec78631ed27a5",
+        "src/plugins/error-handler.ts": "9bdd48c58c482e323a3910e69c5df4b930330183",
+        "src/prompts/index.ts": "a4df35338e1923bd1c5c351f5d05afedd9fd2176",
+        "src/prompts/prompt-enhance.ts": "1779fc05c717c661ece1e5aa4e596d4bf226090f",
+        "src/prompts/types.ts": "18fb477c8fe347b63f5ea6b78619c5ee32824b3a",
+        "src/providers/openai/openai.client.ts": "8a2688f7ce74d54a43081f66afb6c3e5e8096319",
+        "src/providers/openai/prompt-enhancer.ts": "9f4ee09716105188cc0d12962c5ed178fb49c9cd",
+        "src/storage/README.md": "03b46fa80ac81d55830872ce49e457b2c63c3748",
+        "src/storage/index.ts": "ab6ef0fb1af32faffc84799c39eba10858fe681e",
+        "src/storage/keys.ts": "7f6122bb920fda26f1c0cc2d5f457db3b163e3f8",
+        "src/storage/s3.client.ts": "60e58ba6d275460539e7b19210bbf2faea6495fa",
+        "src/storage/s3.service.ts": "f0249e808e96336afd1a21c7d13999bdb7aec87c",
+        "src/storage/types.ts": "46fd3a35b4cb066b5c479546b073d0269e15423a",
+        "src/types.ts": "c4ef7440f8347599f1e995e9b448b68cb7e46cdd",
+        "tsconfig.json": "8f24167afd41ead8cdb40d067264ea54e4cbdc62"
+      },
+      "hashOfExternalDependencies": "89d7f89d6b075f7e",
+      "cache": {
+        "local": false,
+        "remote": false,
+        "status": "MISS",
+        "timeSaved": 0
+      },
+      "command": "prisma generate && tsc",
+      "cliArguments": [],
+      "outputs": [
+        "dist/**",
+        "src/generated/**"
+      ],
+      "excludedOutputs": null,
+      "logFile": "apps\\generation-worker\\.turbo\\turbo-build.log",
+      "directory": "apps\\generation-worker",
+      "dependencies": [
+        "@platform/config#build",
+        "@platform/errors#build",
+        "@platform/logger#build",
+        "@platform/messaging-contract#build",
+        "@platform/rabbitmq-client#build"
+      ],
+      "dependents": [],
+      "with": [],
+      "resolvedTaskDefinition": {
+        "outputs": [
+          "dist/**",
+          "src/generated/**"
+        ],
+        "cache": true,
+        "dependsOn": [
+          "^build"
+        ],
+        "inputs": [
+          ".env*"
+        ],
+        "outputLogs": "full",
+        "persistent": false,
+        "interruptible": false,
+        "env": [],
+        "passThroughEnv": null,
+        "interactive": false
+      },
+      "expandedOutputs": [],
+      "framework": "",
+      "envMode": "strict",
+      "environmentVariables": {
+        "specified": {
+          "env": [],
+          "passThroughEnv": null
+        },
+        "configured": [],
+        "inferred": [],
+        "passthrough": null
+      }
+    },
+    {
+      "taskId": "@thumbcraft/notification-service#build",
+      "task": "build",
+      "package": "@thumbcraft/notification-service",
+      "hash": "384a0a05882cd355",
+      "inputs": {
+        ".env": "274370fb0ae217ea0536f7b2d201cb1246bd8206",
+        ".env.example": "9caa83bcb4250ec82a74156d120cfa4d4622357d",
+        "package.json": "049c82d694e7b5af07053fe02ffc63e5c696dd7c",
+        "src/config.ts": "c3e6330220c662cc128085cf4c7863bd9426fb18",
+        "src/consumers/notification-events.consumer.ts": "142f8373eae950b4ff31a3eb3a93bf2827dffa8c",
+        "src/handlers/otp-requested.handler.ts": "1dba785fd38438e2fcf4806602e874c4b66247cd",
+        "src/handlers/purchase-completed.handler.ts": "84bf8a044b4bd82009bb92399397ea11597c299a",
+        "src/handlers/purchase-failed.handler.ts": "e5e64d97eb14b9a0bb1d08440cf48dc8831bac8e",
+        "src/handlers/user-registered.handler.ts": "24c9f5bdc27eab4ed1095962f182994dfee3dcb0",
+        "src/index.ts": "5cace2c669c909d4e784464c6c990af8c9cd0726",
+        "src/services/mail.service.ts": "c0d8f759e6170b734fa9b51b011dbae634889411",
+        "src/templates/generation-completed.ts": "d93da10e30d988a14779e4cbfa14a33995030ac4",
+        "src/templates/generation-failed.ts": "8fac206dd4e8b8a95bb0e35e61fbd00a96a4e989",
+        "src/templates/index.ts": "a87b460e34424a49534b0cbeef4935e545a6f171",
+        "src/templates/otp-verification.ts": "1a3eeacc275b51132ddb218ab5bd47736c815f94",
+        "src/templates/purchase-completed.ts": "51b21652434bf5ba4d6e330ebfee3789f534d51a",
+        "src/templates/purchase-failed.ts": "1f9877936b8e346fc43f65febd0434e2074c9977",
+        "src/templates/shared.ts": "9249fb8912bcbefefb450f85a32ee6e1dabc1960",
+        "src/templates/types.ts": "cfe4b64c32df4f164f4ab0c1ea7ff9a7baa26812",
+        "src/templates/welcome.ts": "718bb2d2478cfee6064c6f9358a5a3d8f44061c2",
+        "tsconfig.json": "8f24167afd41ead8cdb40d067264ea54e4cbdc62"
+      },
+      "hashOfExternalDependencies": "9975bab1943f0ac1",
+      "cache": {
+        "local": false,
+        "remote": false,
+        "status": "MISS",
+        "timeSaved": 0
+      },
+      "command": "tsc",
+      "cliArguments": [],
+      "outputs": [
+        "dist/**",
+        "src/generated/**"
+      ],
+      "excludedOutputs": null,
+      "logFile": "apps\\notification-service\\.turbo\\turbo-build.log",
+      "directory": "apps\\notification-service",
+      "dependencies": [
+        "@platform/config#build",
+        "@platform/errors#build",
+        "@platform/logger#build",
+        "@platform/messaging-contract#build",
+        "@platform/rabbitmq-client#build"
+      ],
+      "dependents": [],
+      "with": [],
+      "resolvedTaskDefinition": {
+        "outputs": [
+          "dist/**",
+          "src/generated/**"
+        ],
+        "cache": true,
+        "dependsOn": [
+          "^build"
+        ],
+        "inputs": [
+          ".env*"
+        ],
+        "outputLogs": "full",
+        "persistent": false,
+        "interruptible": false,
+        "env": [],
+        "passThroughEnv": null,
+        "interactive": false
+      },
+      "expandedOutputs": [],
+      "framework": "",
+      "envMode": "strict",
+      "environmentVariables": {
+        "specified": {
+          "env": [],
+          "passThroughEnv": null
+        },
+        "configured": [],
+        "inferred": [],
+        "passthrough": null
+      }
+    },
+    {
+      "taskId": "@thumbcraft/wallet-service#build",
+      "task": "build",
+      "package": "@thumbcraft/wallet-service",
+      "hash": "1c3de893070d537d",
+      "inputs": {
+        ".env": "d985400876a58f85900d997ab7f36425b653af6f",
+        ".env.example": "cd02dfb45b939186ddc30490d5a01229b5a429dd",
+        "package.json": "f12327e4e9bea8baa96da015aaa9e73c31ef15db",
+        "prisma.config.ts": "d73df7b3168760f0302beca0ec1b19fd18dc1472",
+        "prisma/migrations/20260713000000_init/migration.sql": "007d3bfc84e31447e97a4dfe2efc32df40674208",
+        "prisma/migrations/20260713200000_add_checkout_sessions/migration.sql": "9b3c20900afce834e03650867f98f7845f9623bb",
+        "prisma/migrations/migration_lock.toml": "37b447ddeafe0321ef2b7df978be8a34f5c59e3d",
+        "prisma/schema.prisma": "8335cb882308637015ad13b4759f8cc9c0e90568",
+        "src/config.ts": "ba1d2ed6e413918e9c1d6c221e1867d3d448b732",
+        "src/consumers/wallet-events.consumer.ts": "9f8e409d80271d729364a6d7ca6f2457724f853c",
+        "src/controllers/billing.controller.ts": "4b57aa344902c8231180c00f2f206d4d4390b71e",
+        "src/controllers/checkout.controller.ts": "61f246596a0575d432907e7099463f98ebc34a6a",
+        "src/controllers/package.controller.ts": "b668da502e1a28affcd365278b7d494cab57d96a",
+        "src/controllers/wallet.controller.ts": "8502148fdca371a5859b30bf37770f9bcf96fd60",
+        "src/db/index.ts": "c9fd94b88435ca0f66a8d682c41c8e549d80fd71",
+        "src/handlers/generation-billing.handler.ts": "8b303d8e1053e4ca948eb4e5a6647cffe86696e1",
+        "src/handlers/user-registered.handler.ts": "ded97c475a9fb59feaa8d4caacac731e61d3baca",
+        "src/index.ts": "7a630e33789458f062fd3170ffb999ce6fea6a54",
+        "src/plugins/auth.ts": "7977a9769ae7e3325d3afe49b99ec78631ed27a5",
+        "src/plugins/error-handler.ts": "9bdd48c58c482e323a3910e69c5df4b930330183",
+        "src/routes/wallet.ts": "c1af3bd45d21e73062e86fa07212410e1d2096c4",
+        "src/routes/webhook.ts": "81fdb555f073f532e31425e850cd51603fe5f650",
+        "src/services/checkout.service.ts": "fec18d78aac39ba4eb5b9164f68d41f5e35a7ada",
+        "src/services/package.service.ts": "0cd69eeb61c0719279657e38c77395020313f2f8",
+        "src/services/stripe.service.ts": "51ff2dd5fe43cbc6f4b8bc74cf14f11382f08e9a",
+        "src/services/wallet.service.ts": "963d4a99f289016c86ee0049a97c2c4c3312c35f",
+        "src/services/webhook.service.ts": "2fb619cf5137ec70b6f17b04ee90135e282be70c",
+        "src/types.ts": "a2f1cc1cc3887d77e705ca9792db685a644db5fc",
+        "tsconfig.json": "8f24167afd41ead8cdb40d067264ea54e4cbdc62"
+      },
+      "hashOfExternalDependencies": "a9535f8219cee42e",
+      "cache": {
+        "local": false,
+        "remote": false,
+        "status": "MISS",
+        "timeSaved": 0
+      },
+      "command": "prisma generate && tsc",
+      "cliArguments": [],
+      "outputs": [
+        "dist/**",
+        "src/generated/**"
+      ],
+      "excludedOutputs": null,
+      "logFile": "apps\\wallet-service\\.turbo\\turbo-build.log",
+      "directory": "apps\\wallet-service",
+      "dependencies": [
+        "@platform/config#build",
+        "@platform/errors#build",
+        "@platform/logger#build",
+        "@platform/messaging-contract#build",
+        "@platform/rabbitmq-client#build"
+      ],
+      "dependents": [],
+      "with": [],
+      "resolvedTaskDefinition": {
+        "outputs": [
+          "dist/**",
+          "src/generated/**"
+        ],
+        "cache": true,
+        "dependsOn": [
+          "^build"
+        ],
+        "inputs": [
+          ".env*"
+        ],
+        "outputLogs": "full",
+        "persistent": false,
+        "interruptible": false,
+        "env": [],
+        "passThroughEnv": null,
+        "interactive": false
+      },
+      "expandedOutputs": [],
+      "framework": "",
+      "envMode": "strict",
+      "environmentVariables": {
+        "specified": {
+          "env": [],
+          "passThroughEnv": null
+        },
+        "configured": [],
+        "inferred": [],
+        "passthrough": null
+      }
+    },
+    {
+      "taskId": "@thumbcraft/web#build",
+      "task": "build",
+      "package": "@thumbcraft/web",
+      "hash": "869a53fb326579bb",
+      "inputs": {
+        ".env.example": "99cbcd54e2d20157437145e261673ea427ae6364",
+        ".gitignore": "1e81c075b85ff15c44eb029d64f22992f444a55a",
+        "README.md": "7059a962adb0138b65dd10e0aee66ccfe984b8c6",
+        "eslint.config.js": "cee1e2c788d908e4a8ff796eb6edbe73ee73fffd",
+        "index.html": "bf942b524d9deed8ff8da08ad81d5715e85a57b9",
+        "netlify.toml": "debaaee402e3836b3eec8491e65d037f54a9fd56",
+        "package.json": "5093fd35d0d6c009425497eedbc9686221d7887f",
+        "public/favicon.svg": "64550ffcf8ea87f6545e3a389b3fa11a60fd8ea1",
+        "public/gallery/thumbnail-68b2f0fdd86111670ff367f7-1.png": "8311768397f56d7021c680a0d4a9487a0f77711c",
+        "public/gallery/thumbnail-68b2f7c8f78bb3c1033b1b53-1.png": "3822a25559774e75499c458a73c1f1678fb6fbbc",
+        "public/gallery/thumbnail-68b2f7c8f78bb3c1033b1b53-2.png": "9519e23c7163cd3d51fcabcccad1d8763d326591",
+        "public/gallery/thumbnail-68b322db94465a4ddecc3d31-2.png": "b34571535b64cb69cfda1741e867c4c7bb8ca6a0",
+        "public/gallery/thumbnail-68b3372c3a786e66dc8e9ba0-2.png": "1d3fc9a8113de9cb74076355d5619e15d77bc7d6",
+        "public/gallery/thumbnail-68b3ed76ae68e13ffa09b90a-2.png": "5a06276b2837ef13b857905063134bba38c833da",
+        "public/gallery/thumbnail-68b4045b63ffee57c8600856-3.png": "4670437c1dc8c0c879ea8705bdaffc95b216cb3a",
+        "public/gallery/thumbnail-68b406baf62d49c7eaf9efdd-3.png": "ead84b60f01dd43eedebb5a2e366f4ba2bd782b0",
+        "public/gallery/thumbnail-68b4126a6e583ae5de07ec2d-1.png": "008d9f4198346bdd59c0883279ead09d1a42e6f7",
+        "public/gallery/thumbnail-68b4143a6e583ae5de07ec41-2.png": "b4c74199e0ef0265220c745251614939d594424e",
+        "public/gallery/thumbnail-68b416c542174adce76347d4-1.png": "df5d2495ae33941d5475159b465e2c87e4825ef0",
+        "public/gallery/thumbnail-68b41877d0cb58818761c54f-1.png": "67bd00c81f1d2286bffe86e5cbe7129c000fc022",
+        "public/gallery/thumbnail-68b41877d0cb58818761c54f-2.png": "02f0f7ac7f87f918fdac1bdfc10a7a9b67f387a8",
+        "public/gallery/thumbnail-68b419fc264b97e4eba26881-1.png": "b53654bdb011a4d8219bf01125bc7227d1dd945f",
+        "public/gallery/thumbnail-68b4277aef9e0d38640c7a01-1.png": "7a323195c9cc2d1af4a7bc0efc01a20e583e8b4d",
+        "public/gallery/thumbnail-68b4281def9e0d38640c7a51-1.png": "51b0bbd6c2581439247a5b5411fa045042c088c0",
+        "public/gallery/thumbnail-68b429aed65f48bcc52776fc-1.png": "d09ee587580b43bad2b7c5b8d7d1ea82db031422",
+        "public/gallery/thumbnail-68b42a23d65f48bcc527771b-1.png": "1b4b5ae59fd581b6c481f53327fe4a7325c71033",
+        "public/gallery/thumbnail-68b435580f5804318562ca23-2.png": "2b3d4cc38613896724d4b84dbe2dfaa98420ac9f",
+        "public/gallery/thumbnail-68b43bccd62513d1b2f2b746-1.png": "c22c5fb95493fbef34536a6bf4caeac2ffbb753c",
+        "public/gallery/thumbnail-68b43f34e7e44e0446089c5d-1.png": "6689a723773311e06b1be371bef60028ddba06b0",
+        "public/gallery/thumbnail-68b43fb7e7e44e0446089cd7-1.png": "20b9fd925327373db47f48b242f1cb46e6dd5baf",
+        "public/gallery/thumbnail-68b4492eefd378e333302d73-3.png": "a37d88a9f339f59be33bd91d19c02a3c382cffeb",
+        "public/gallery/thumbnail-68b45d166ead8ddfa8c8cb43-2.png": "104719a2d45b4f8388d8e7345deddea6892301e2",
+        "public/gallery/thumbnail-68b45f240392f8c02e4f6f73-2.png": "89c4069cf8046e47b8995d505ee04494175bb48b",
+        "public/gallery/thumbnail-68b46b09c8d644b1cc743846-1.png": "7acc6b04e1a8224860ddb96936895eaf0edfd368",
+        "public/gallery/thumbnail-68b47c4ec8d644b1cc743d0a-2.png": "1433ee12587982cf58e5e92a9ac360d9d715963d",
+        "public/gallery/thumbnail-68b47fc3c8d644b1cc743d7a-1.png": "6d907ba6dac2697629dd18e68ebc16e2873f981c",
+        "public/gallery/thumbnail-68b48e53345dcbc53f391aff-1.png": "106a2705443cb6e788a9111262ba4e7eb12240f9",
+        "public/vite.svg": "e7b8dfb1b2a60bd50538bec9f876511b9cac21e3",
+        "src/App.jsx": "b8e1056c7e91b578c5d8482f00e45c68f858ebb4",
+        "src/api/client.js": "de9170c3943d4045115aae40eb9baa8a27e32f1a",
+        "src/assets/react.svg": "6c87de9bb3358469122cc991d5cf578927246184",
+        "src/components/Footer.jsx": "8ca669158dbd5d921b6da62489e1b3b7c418689d",
+        "src/components/Gallery.jsx": "cf7bfa256cebfbb670fe686a5a5de74a066a9d19",
+        "src/components/Header.jsx": "7dca660f250c1c69f05176a5dbd864210134e91e",
+        "src/components/HistoryPage.jsx": "dd25d8957da5b30951d1c71080df877880c57ef8",
+        "src/components/Homepage.jsx": "59d0fd49b7f9630eaa217544eae55b1a107a07d3",
+        "src/components/ImagePreviewModal.jsx": "c4e0473b4ad6f5a0d2a113dc28210e949facbd53",
+        "src/components/ImageUpload.jsx": "d7943122208924b0a6a0b92d615a9d991f01da61",
+        "src/components/LandingPage.jsx": "7b361052aeee7ee096b455eb1a4c878dff4175ca",
+        "src/components/LoadingScreen.jsx": "2b43ce184a15dd1798e03c32b39e845c4b6ae239",
+        "src/components/LoginModal.jsx": "f04355904f46ba63c00f3a97f6d01e74248498de",
+        "src/components/ModeSelection.jsx": "fb3a9126898a5af16f870e4fb3c4b30047a270f0",
+        "src/components/OptionSelection.jsx": "4e39cc433166239e109de9a4d4bc2d43f534b56a",
+        "src/components/PromptInput.jsx": "239488784b4f762e60f445847b54bb673ceacf52",
+        "src/components/QuestionFlow.jsx": "274f08f5ee81efba15de80a8dfcb2c87d68b3027",
+        "src/components/ResultsGrid.jsx": "0c029af3fcb3bfdf34aa6f50025ae800e3a0fa56",
+        "src/components/ServerWarmupToast.jsx": "c27469f456abea930ce284f5c7c4bf20c01687a6",
+        "src/components/Toast.jsx": "4c7a2136ff75460aab429ccd3d070f8c9734f0da",
+        "src/index.css": "6f19b495d317b742a5b8c5d7b3528ca6f2db22d9",
+        "src/main.jsx": "b9a1a6deac8775b5598874b2bc3c7971d82cf211",
+        "src/stores/authStore.js": "7ee77587a2f601238602f291cf7ea2348b9dca37",
+        "src/stores/imageStore.js": "943f5e038bb8d744d8dd3940187841545d756cf4",
+        "src/stores/uiStore.js": "77847a37720f13f8622c0357cd504ab1e70ccb0a",
+        "vite.config.js": "b4e523d7c7121bbd40ba5bcb391d82f7cee7cb86"
+      },
+      "hashOfExternalDependencies": "fa4dbaf4859dccdf",
+      "cache": {
+        "local": false,
+        "remote": false,
+        "status": "MISS",
+        "timeSaved": 0
+      },
+      "command": "vite build",
+      "cliArguments": [],
+      "outputs": [
+        "dist/**",
+        "src/generated/**"
+      ],
+      "excludedOutputs": null,
+      "logFile": "apps\\web\\.turbo\\turbo-build.log",
+      "directory": "apps\\web",
+      "dependencies": [],
+      "dependents": [],
+      "with": [],
+      "resolvedTaskDefinition": {
+        "outputs": [
+          "dist/**",
+          "src/generated/**"
+        ],
+        "cache": true,
+        "dependsOn": [
+          "^build"
+        ],
+        "inputs": [
+          ".env*"
+        ],
+        "outputLogs": "full",
+        "persistent": false,
+        "interruptible": false,
+        "env": [],
+        "passThroughEnv": null,
+        "interactive": false
+      },
+      "expandedOutputs": [],
+      "framework": "vite",
+      "envMode": "strict",
+      "environmentVariables": {
+        "specified": {
+          "env": [],
+          "passThroughEnv": null
+        },
+        "configured": [],
+        "inferred": [],
+        "passthrough": null
+      }
+    }
+  ],
+  "user": "",
+  "scm": {
+    "type": "git",
+    "sha": "d487bc81b754e98cff08f97ace3d026257630d26",
+    "branch": "main"
+  }
+}
+
