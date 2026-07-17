@@ -1,6 +1,9 @@
 /**
  * Generation + upload proxies.
  * Auth: gateway `requireAuth` verifies JWT; downstream calls include X-User-* headers.
+ *
+ * Generate uses JSON body (preferences + top-level prefs).
+ * Uploads remain multipart.
  */
 import type { FastifyInstance } from "fastify";
 import type { GatewayConfig } from "../config.js";
@@ -61,31 +64,34 @@ export async function registerGenerationRoutes(
     "/api/generate",
     { preHandler: authHook },
     async (request, reply) => {
-      const form = await buildMultipartBody(request);
       const result = await proxyJson(`${config.GENERATION_WORKER_URL}/api/generate`, {
         method: "POST",
-        headers: buildDownstreamHeaders(request),
-        body: form,
+        headers: {
+          ...buildDownstreamHeaders(request),
+          "Content-Type": "application/json",
+          ...(typeof request.headers["idempotency-key"] === "string"
+            ? { "Idempotency-Key": request.headers["idempotency-key"] }
+            : {}),
+        },
+        body: JSON.stringify(request.body ?? {}),
       });
 
       return reply.status(result.status).send(result.body);
     },
   );
 
-  app.post(
-    "/api/generate-from-image",
+  app.get(
+    "/api/sessions/:sessionId/messages",
     { preHandler: authHook },
     async (request, reply) => {
-      const form = await buildMultipartBody(request);
+      const { sessionId } = request.params as { sessionId: string };
       const result = await proxyJson(
-        `${config.GENERATION_WORKER_URL}/api/generate-from-image`,
+        `${config.GENERATION_WORKER_URL}/api/sessions/${encodeURIComponent(sessionId)}/messages`,
         {
-          method: "POST",
+          method: "GET",
           headers: buildDownstreamHeaders(request),
-          body: form,
         },
       );
-
       return reply.status(result.status).send(result.body);
     },
   );

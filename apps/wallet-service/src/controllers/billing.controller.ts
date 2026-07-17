@@ -8,22 +8,22 @@ import {
   type QuoteKind,
 } from "../services/wallet.service.js";
 
-const QUOTE_KINDS = new Set<QuoteKind>(["prompt_enhance"]);
+const QUOTE_KINDS = new Set<QuoteKind>(["prompt_enhance", "generation"]);
 
 export function quoteBilling(
   body: Record<string, unknown>,
-  promptEnhanceCoinCost: number,
+  costs: { promptEnhance: number; generation: number },
 ) {
   const kind = body.kind;
   if (typeof kind !== "string" || !QUOTE_KINDS.has(kind as QuoteKind)) {
     throw new AppError(
       "VALIDATION_ERROR",
-      'kind must be "prompt_enhance"',
+      'kind must be "prompt_enhance" or "generation"',
       422,
     );
   }
 
-  return quoteCoins(kind as QuoteKind, promptEnhanceCoinCost);
+  return quoteCoins(kind as QuoteKind, costs);
 }
 
 export async function reserveBilling(

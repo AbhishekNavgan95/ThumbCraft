@@ -14,6 +14,8 @@ export const configSchema = baseServiceSchema.extend({
   WELCOME_BONUS_COINS: z.coerce.number().int().nonnegative().default(50),
   /** Fixed coin price for prompt enhancement until model_pricing exists. */
   PROMPT_ENHANCE_COIN_COST: z.coerce.number().int().positive().default(1),
+  /** Fixed coin price for image generation until model_pricing exists. */
+  GENERATION_COIN_COST: z.coerce.number().int().positive().default(5),
 });
 
 export type WalletServiceConfig = z.infer<typeof configSchema>;

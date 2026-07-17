@@ -55,7 +55,10 @@ export async function registerWalletRoutes(
     },
     async (request, reply) => {
       const body = (request.body ?? {}) as Record<string, unknown>;
-      const result = quoteBilling(body, config.PROMPT_ENHANCE_COIN_COST);
+      const result = quoteBilling(body, {
+        promptEnhance: config.PROMPT_ENHANCE_COIN_COST,
+        generation: config.GENERATION_COIN_COST,
+      });
       return reply.status(200).send(result);
     },
   );

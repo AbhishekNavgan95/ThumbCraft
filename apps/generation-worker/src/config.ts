@@ -8,6 +8,9 @@ export const configSchema = baseServiceSchema.extend({
   /** Wallet service base URL for sync quote/reserve (capture/release via events). */
   WALLET_SERVICE_URL: z.string().url().default("http://localhost:3002"),
 
+  /** Google AI / Gemini Interactions API key (image generation). */
+  GEMINI_API_KEY: z.string().optional(),
+
   OPENAI_API_KEY: z.string().optional(),
   /** Chat model used for prompt enhancement. */
   OPENAI_ENHANCE_MODEL: z.string().min(1).default("gpt-5-mini"),
@@ -23,6 +26,15 @@ export const configSchema = baseServiceSchema.extend({
    * If omitted, virtual-hosted-style S3 URLs are built from region + bucket.
    */
   AWS_S3_PUBLIC_BASE_URL: z.string().url().optional(),
+
+  /**
+   * When true, skip the real image LLM and return a placeholder image.
+   * Use for end-to-end flow testing (sessions, wallet, messages, events).
+   */
+  FAKE_IMAGE_GENERATION: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((v) => v === "true"),
 });
 
 export type GenerationWorkerConfig = z.infer<typeof configSchema>;

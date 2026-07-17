@@ -529,18 +529,20 @@ Build the generation-worker in this order. Each module: routes → controller �
 
 - [x] **Models** — admin CRUD; public `GET` visible models (title, description, aspect/resolution lists); seed script
 - [x] **Templates** — categories + thumbnail library; admin CRUD; public browse by category (`modules/gallery`)
-- [x] **Sessions** — CRUD + empty-session dedupe (`POST` ensure); defaults title `"New session"` / category `"default"`; gateway proxy `/api/sessions`
-  - [ ] Maintain `latest_*` pointers on generate/edit (needs Messages + consumers)
-- [ ] **Messages** — user + assistant turns; validate `model_id`, aspect/resolution, refs; `reference_id` wiring
-- [ ] **Preferences / prompt assemble** — catalog + `buildGenerationPrompt`; top-level model/aspect/resolution out of JSON (see `preferences-management-plan.md`)
+- [x] **Sessions** — CRUD + empty-session dedupe (`POST` ensure); defaults title `"New session"` / category `"default"`; `pinned`; gateway proxy `/api/sessions`
+  - [x] Maintain `latest_*` pointers on generate (inline sync path)
+- [x] **Messages** — user + assistant turns on generate; list `GET /api/sessions/:id/messages`; `providerInput` persistence
+- [x] **Preferences / prompt assemble** — catalog + `buildFinalGenerationPrompt` / `resolveProviderInput` (first turn assembled, later `userText` only)
 - [x] **Jobs / billing bridge** — `generation_jobs` + idempotency; wallet quote/reserve (sync); capture/release via `generation.completed` / `generation.failed`
+  - [x] **Generation wallet** — quote `kind=generation`, reserve before LLM, capture/release via RabbitMQ (+ sync release fallback)
 - [x] **Prompt enhance** — sync `POST /api/enhance-prompt` with `kind = prompt_enhance`, system prompts registry, OpenAI enhancer
-  - [ ] Persist `enhanced_prompt` / `used_enhanced_prompt` on user messages (needs Messages)
-- [ ] **Providers (adapters)** — Gemini Interactions + OpenAI shared `generate` / `edit` interface (OpenAI client used for enhance only today)
-- [x] **Storage** — S3 upload for user refs + template images (generated images path ready in storage folder)
-- [ ] **Workers / consumers** — RabbitMQ: image job → adapter → S3 → `completed` / `failed`; update session head
-- [x] **Internal HTTP + gateway** — uploads (`/internal/...`), models, templates/gallery, sessions, enhance-prompt, wallet quote/reserve/release
-  - [ ] Gateway proxies for generate/refine, poll
+  - [x] Persist `enhanced_prompt` / `used_enhanced_prompt` on user messages when client sends them
+- [x] **Providers (adapters)** — Gemini Interactions image adapter + shared `ImageProvider` interface (OpenAI image stub / 501)
+- [x] **Storage** — S3 upload for user refs + template images + generated outputs
+- [ ] **Workers / consumers** — move image generation off the request path onto RabbitMQ (sync generate works for now)
+- [x] **Notifications** — `generation.completed` / `generation.failed` emails for image jobs
+- [x] **Internal HTTP + gateway** — uploads, models, gallery, sessions, messages, enhance, **generate (JSON)**
+  - [ ] Async poll / refine-dedicated route polish
 
 
 

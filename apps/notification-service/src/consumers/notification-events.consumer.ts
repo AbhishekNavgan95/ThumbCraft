@@ -3,12 +3,16 @@ import {
   Queues,
   RoutingKeys,
   type AuthOtpRequestedPayload,
+  type GenerationCompletedPayload,
+  type GenerationFailedPayload,
   type PlatformEvent,
   type UserRegisteredPayload,
   type WalletPurchaseCompletedPayload,
   type WalletPurchaseFailedPayload,
 } from "@platform/messaging-contract";
 import type { RabbitMQClient } from "@platform/rabbitmq-client";
+import { handleGenerationCompleted } from "../handlers/generation-completed.handler.js";
+import { handleGenerationFailed } from "../handlers/generation-failed.handler.js";
 import { handleOtpRequested } from "../handlers/otp-requested.handler.js";
 import { handlePurchaseCompleted } from "../handlers/purchase-completed.handler.js";
 import { handlePurchaseFailed } from "../handlers/purchase-failed.handler.js";
@@ -20,6 +24,8 @@ const NOTIFICATION_ROUTING_KEYS = [
   RoutingKeys.USER_REGISTERED,
   RoutingKeys.WALLET_PURCHASE_COMPLETED,
   RoutingKeys.WALLET_PURCHASE_FAILED,
+  RoutingKeys.GENERATION_COMPLETED,
+  RoutingKeys.GENERATION_FAILED,
 ] as const;
 
 export async function startNotificationEventsConsumer(
@@ -55,6 +61,20 @@ export async function startNotificationEventsConsumer(
         case RoutingKeys.WALLET_PURCHASE_FAILED:
           await handlePurchaseFailed(
             event as PlatformEvent<WalletPurchaseFailedPayload>,
+            mail,
+            logger,
+          );
+          break;
+        case RoutingKeys.GENERATION_COMPLETED:
+          await handleGenerationCompleted(
+            event as PlatformEvent<GenerationCompletedPayload>,
+            mail,
+            logger,
+          );
+          break;
+        case RoutingKeys.GENERATION_FAILED:
+          await handleGenerationFailed(
+            event as PlatformEvent<GenerationFailedPayload>,
             mail,
             logger,
           );

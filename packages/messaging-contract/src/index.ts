@@ -54,11 +54,17 @@ export interface GenerationCompletedPayload {
   imageUrls?: string[];
   /** Present for prompt_enhance jobs. */
   enhancedPrompt?: string;
+  /** For notification emails (optional for backward compat). */
+  email?: string;
+  name?: string;
 }
 
 export interface GenerationFailedPayload {
   kind: GenerationJobKindPayload;
   error: string;
+  /** For notification emails (optional for backward compat). */
+  email?: string;
+  name?: string;
 }
 
 export interface WalletPurchaseCompletedPayload {

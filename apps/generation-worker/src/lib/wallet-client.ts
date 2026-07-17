@@ -27,7 +27,7 @@ export class WalletClient {
 
   async quote(
     headers: WalletUserHeaders,
-    body: { kind: "prompt_enhance" },
+    body: { kind: "prompt_enhance" | "generation" },
   ): Promise<QuoteResult> {
     return this.requestJson<QuoteResult>("/api/wallet/quote", headers, body);
   }

@@ -84,6 +84,8 @@ export class EnhanceService {
         payload: {
           kind: "prompt_enhance",
           enhancedPrompt: result.enhancedPrompt,
+          email: input.user.email,
+          name: input.user.name,
         },
       });
 
@@ -109,7 +111,12 @@ export class EnhanceService {
           userId: input.user.userId,
           jobId: job.id,
           correlationId: input.correlationId,
-          payload: { kind: "prompt_enhance", error: message },
+          payload: {
+            kind: "prompt_enhance",
+            error: message,
+            email: input.user.email,
+            name: input.user.name,
+          },
         });
       } catch (publishError) {
         this.deps.logger.error(

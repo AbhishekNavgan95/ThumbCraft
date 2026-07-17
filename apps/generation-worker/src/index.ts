@@ -5,7 +5,9 @@ import { loadGenerationConfig } from "./config.js";
 import { createPrismaClient } from "./db/index.js";
 import { WalletClient } from "./lib/wallet-client.js";
 import { EnhanceService } from "./modules/enhance/enhance.service.js";
+import { GenerateService } from "./modules/generate/generate.service.js";
 import { UploadService } from "./modules/uploads/upload.service.js";
+import { createS3StorageFromEnv } from "./storage/index.js";
 
 const config = loadGenerationConfig();
 const logger = createLogger({
@@ -16,15 +18,46 @@ const logger = createLogger({
 const prisma = createPrismaClient();
 const rabbitmq = new RabbitMQClient({ url: config.RABBITMQ_URL });
 const wallet = new WalletClient(config.WALLET_SERVICE_URL);
-const enhanceService = new EnhanceService({
+
+let enhanceService: EnhanceService | null = null;
+if (config.OPENAI_API_KEY?.trim()) {
+  enhanceService = new EnhanceService({
+    prisma,
+    rabbitmq,
+    wallet,
+    logger,
+    openaiApiKey: config.OPENAI_API_KEY,
+    enhanceModel: config.OPENAI_ENHANCE_MODEL,
+  });
+} else {
+  logger.warn("OPENAI_API_KEY not set — enhance-prompt returns 503");
+}
+
+let uploadService: UploadService | null = null;
+let storage: ReturnType<typeof createS3StorageFromEnv> | null = null;
+if (config.AWS_S3_BUCKET) {
+  storage = createS3StorageFromEnv(config);
+  uploadService = new UploadService(config);
+} else {
+  logger.warn(
+    "AWS_S3_BUCKET not set — uploads / generated image persistence unavailable",
+  );
+}
+
+const generateService = new GenerateService({
   prisma,
   rabbitmq,
   wallet,
   logger,
+  geminiApiKey: config.GEMINI_API_KEY,
   openaiApiKey: config.OPENAI_API_KEY,
-  enhanceModel: config.OPENAI_ENHANCE_MODEL,
+  storage,
+  fakeImageGeneration: config.FAKE_IMAGE_GENERATION,
 });
-const uploadService = new UploadService(config);
+
+if (config.FAKE_IMAGE_GENERATION) {
+  logger.warn("FAKE_IMAGE_GENERATION=true — real image LLM calls are disabled");
+}
 
 const app = await createApp({
   config,
@@ -32,6 +65,7 @@ const app = await createApp({
   prisma,
   enhanceService,
   uploadService,
+  generateService,
 });
 
 async function start() {

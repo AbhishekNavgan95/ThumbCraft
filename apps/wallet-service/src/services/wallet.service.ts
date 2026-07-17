@@ -4,7 +4,7 @@ import { AppError } from "@platform/errors";
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-export type QuoteKind = "prompt_enhance";
+export type QuoteKind = "prompt_enhance" | "generation";
 
 export async function getOrCreateWallet(prisma: PrismaClient, userId: string) {
   const existing = await prisma.wallet.findUnique({ where: { userId } });
@@ -27,10 +27,13 @@ export async function getWallet(prisma: PrismaClient, userId: string) {
 
 export function quoteCoins(
   kind: QuoteKind,
-  promptEnhanceCoinCost: number,
+  costs: { promptEnhance: number; generation: number },
 ): { kind: QuoteKind; coinCost: number } {
   if (kind === "prompt_enhance") {
-    return { kind, coinCost: promptEnhanceCoinCost };
+    return { kind, coinCost: costs.promptEnhance };
+  }
+  if (kind === "generation") {
+    return { kind, coinCost: costs.generation };
   }
   throw new AppError("VALIDATION_ERROR", `Unsupported quote kind: ${kind}`, 422);
 }
