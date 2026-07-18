@@ -11,6 +11,7 @@ import { registerGalleryRoutes } from "./modules/gallery/gallery.routes.js";
 import { registerGenerateRoutes } from "./modules/generate/generate.routes.js";
 import type { GenerateService } from "./modules/generate/generate.service.js";
 import { registerHealthRoutes } from "./modules/health/health.routes.js";
+import { registerJobRoutes } from "./modules/jobs/job.routes.js";
 import { registerMessageRoutes } from "./modules/messages/message.routes.js";
 import { registerModelRoutes } from "./modules/models/model.routes.js";
 import { registerSessionRoutes } from "./modules/sessions/session.routes.js";
@@ -83,6 +84,7 @@ export async function createApp(deps: {
   }
 
   await registerGenerateRoutes(app, generateService);
+  await registerJobRoutes(app, prisma);
 
   if (uploadService) {
     await registerUploadRoutes(app, uploadService);

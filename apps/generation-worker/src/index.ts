@@ -1,5 +1,6 @@
 import { createLogger } from "@platform/logger";
 import { RabbitMQClient } from "@platform/rabbitmq-client";
+import type { Worker } from "bullmq";
 import { createApp } from "./app.js";
 import { loadGenerationConfig } from "./config.js";
 import { createPrismaClient } from "./db/index.js";
@@ -7,6 +8,12 @@ import { WalletClient } from "./lib/wallet-client.js";
 import { EnhanceService } from "./modules/enhance/enhance.service.js";
 import { GenerateService } from "./modules/generate/generate.service.js";
 import { UploadService } from "./modules/uploads/upload.service.js";
+import {
+  createGenerationQueue,
+  createRedisConnection,
+  startGenerationWorker,
+  type GenerationJobPayload,
+} from "./queue/index.js";
 import { createS3StorageFromEnv } from "./storage/index.js";
 
 const config = loadGenerationConfig();
@@ -18,6 +25,9 @@ const logger = createLogger({
 const prisma = createPrismaClient();
 const rabbitmq = new RabbitMQClient({ url: config.RABBITMQ_URL });
 const wallet = new WalletClient(config.WALLET_SERVICE_URL);
+
+const redis = createRedisConnection(config.REDIS_URL);
+const generationQueue = createGenerationQueue(redis);
 
 let enhanceService: EnhanceService | null = null;
 if (config.OPENAI_API_KEY?.trim()) {
@@ -53,6 +63,7 @@ const generateService = new GenerateService({
   openaiApiKey: config.OPENAI_API_KEY,
   storage,
   fakeImageGeneration: config.FAKE_IMAGE_GENERATION,
+  generationQueue,
 });
 
 if (config.FAKE_IMAGE_GENERATION) {
@@ -68,12 +79,24 @@ const app = await createApp({
   generateService,
 });
 
+let generationWorker: Worker<GenerationJobPayload> | null = null;
+
 async function start() {
   try {
     await prisma.$connect();
     logger.info("database connected");
     await rabbitmq.connect();
     logger.info("rabbitmq connected");
+
+    // Separate Redis connection for the Worker (BullMQ recommendation).
+    const workerRedis = createRedisConnection(config.REDIS_URL);
+    generationWorker = startGenerationWorker({
+      connection: workerRedis,
+      generateService,
+      logger,
+    });
+    logger.info("bullmq generation worker started");
+
     await app.listen({ port: config.PORT, host: "0.0.0.0" });
     logger.info({ port: config.PORT }, "service started");
   } catch (error) {
@@ -84,6 +107,11 @@ async function start() {
 
 async function shutdown() {
   logger.info("shutting down");
+  if (generationWorker) {
+    await generationWorker.close();
+  }
+  await generationQueue.close();
+  await redis.quit();
   await app.close();
   await rabbitmq.close();
   await prisma.$disconnect();

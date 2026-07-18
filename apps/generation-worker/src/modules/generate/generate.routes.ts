@@ -4,7 +4,8 @@ import type { GenerateService } from "./generate.service.js";
 
 /**
  * Image generation for a session turn.
- * Wallet reserve/capture is intentionally pending — jobs are recorded with coinCost=0.
+ * HTTP path reserves coins and enqueues BullMQ; LLM runs asynchronously.
+ * Poll GET /api/jobs/:jobId (or session messages) until assistant completes.
  *
  * POST /api/generate
  * Body JSON: originalPrompt, preferences, modelId, requiredAspectRatio, requiredResolution, sessionId?
@@ -22,7 +23,7 @@ export async function registerGenerateRoutes(
     { preHandler: authHook },
     async (request, reply) => {
       const result = await generateController(request, generateService);
-      return reply.status(200).send(result);
+      return reply.status(202).send(result);
     },
   );
 }

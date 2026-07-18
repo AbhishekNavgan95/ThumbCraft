@@ -81,6 +81,22 @@ export async function registerGenerationRoutes(
   );
 
   app.get(
+    "/api/jobs/:jobId",
+    { preHandler: authHook },
+    async (request, reply) => {
+      const { jobId } = request.params as { jobId: string };
+      const result = await proxyJson(
+        `${config.GENERATION_WORKER_URL}/api/jobs/${encodeURIComponent(jobId)}`,
+        {
+          method: "GET",
+          headers: buildDownstreamHeaders(request),
+        },
+      );
+      return reply.status(result.status).send(result.body);
+    },
+  );
+
+  app.get(
     "/api/sessions/:sessionId/messages",
     { preHandler: authHook },
     async (request, reply) => {

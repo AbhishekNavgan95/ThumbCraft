@@ -70,3 +70,38 @@ export async function updateJobStatus(
     },
   });
 }
+
+export async function findJobByIdForUser(
+  prisma: PrismaClient,
+  userId: string,
+  jobId: string,
+) {
+  return prisma.generationJob.findFirst({
+    where: { id: jobId, userId },
+  });
+}
+
+export function toPublicJob(job: {
+  id: string;
+  userId: string;
+  sessionId: string | null;
+  messageId: string | null;
+  kind: string;
+  status: string;
+  coinCost: number;
+  error: string | null;
+  createdAt: Date;
+  completedAt: Date | null;
+}) {
+  return {
+    id: job.id,
+    sessionId: job.sessionId,
+    messageId: job.messageId,
+    kind: job.kind,
+    status: job.status,
+    coinCost: job.coinCost,
+    error: job.error,
+    createdAt: job.createdAt,
+    completedAt: job.completedAt,
+  };
+}

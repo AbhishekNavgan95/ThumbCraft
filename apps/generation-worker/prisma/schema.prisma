@@ -58,7 +58,7 @@ model GenerationModel {
   description String
   /// e.g. ["1:1", "16:9", "9:16"]
   supportedAspectRatios String[] @map("supported_aspect_ratios")
-  /// e.g. ["512x512", "1024x1024", "2048x2048"]
+  /// Gemini Interactions `image_size` values, e.g. ["512", "1K", "2K", "4K"]
   supportedResolutions  String[] @map("supported_resolutions")
   /// When false, hidden from user selection (admin can still see / re-enable).
   visible     Boolean  @default(false)

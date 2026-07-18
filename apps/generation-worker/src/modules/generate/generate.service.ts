@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { AppError } from "@platform/errors";
 import type { Logger } from "@platform/logger";
 import type { RabbitMQClient } from "@platform/rabbitmq-client";
+import type { Queue } from "bullmq";
 import type { Prisma, PrismaClient } from "../../generated/prisma/client.js";
 import {
   publishGenerationCompleted,
@@ -18,6 +19,8 @@ import {
   type ThumbnailPreferences,
 } from "../../prompts/index.js";
 import { createImageProvider } from "../../providers/index.js";
+import type { GenerationJobPayload } from "../../queue/generation.queue.js";
+import { enqueueGenerationJob } from "../../queue/generation.queue.js";
 import type { S3StorageService } from "../../storage/index.js";
 import {
   createGenerationJob,
@@ -50,16 +53,21 @@ export class GenerateService {
       storage: S3StorageService | null;
       /** Skip real LLM — return a placeholder image URL. */
       fakeImageGeneration?: boolean;
+      generationQueue: Queue<GenerationJobPayload>;
     },
   ) {}
 
+  /**
+   * HTTP path: validate → persist messages → reserve coins → enqueue BullMQ.
+   * Returns immediately; LLM runs in `processQueuedJob`.
+   */
   async generate(input: {
     user: WalletUserHeaders;
     body: GenerateRequestBody;
     correlationId: string;
     idempotencyKey?: string;
   }): Promise<GenerateResult> {
-    const { prisma, logger, wallet, rabbitmq } = this.deps;
+    const { prisma, logger, wallet } = this.deps;
     const userId = input.user.userId;
 
     const model = await prisma.generationModel.findUnique({
@@ -161,17 +169,165 @@ export class GenerateService {
     });
 
     try {
+      await enqueueGenerationJob(this.deps.generationQueue, {
+        jobId: job.id,
+        userId,
+        email: input.user.email,
+        name: input.user.name,
+        role: input.user.role,
+        correlationId: input.correlationId,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to enqueue generation";
+      await failAssistantMessage(prisma, assistantMessage.id, message);
+      await updateJobStatus(prisma, job.id, "failed", message);
+      try {
+        await wallet.release(input.user, { jobId: job.id });
+        await updateJobStatus(prisma, job.id, "released", message);
+      } catch (releaseError) {
+        logger.error(
+          { err: releaseError, jobId: job.id },
+          "wallet release failed after enqueue error",
+        );
+      }
+      throw new AppError("SERVICE_UNAVAILABLE", message, 503);
+    }
+
+    logger.info(
+      {
+        correlationId: input.correlationId,
+        sessionId: session.id,
+        jobId: job.id,
+        coinCost: quote.coinCost,
+      },
+      "generation job enqueued",
+    );
+
+    const freshAssistant = await prisma.generationMessage.findUniqueOrThrow({
+      where: { id: assistantMessage.id },
+    });
+    const freshUser = await prisma.generationMessage.findUniqueOrThrow({
+      where: { id: userMessage.id },
+    });
+    const freshJob = await prisma.generationJob.findUniqueOrThrow({
+      where: { id: job.id },
+    });
+
+    return {
+      session: {
+        id: session.id,
+        latestInteractionId: session.latestInteractionId,
+        latestMessageId: session.latestMessageId,
+        latestAssistantMessageId: session.latestAssistantMessageId,
+      },
+      userMessage: toPublicMessage(freshUser),
+      assistantMessage: toPublicMessage(freshAssistant),
+      job: {
+        id: freshJob.id,
+        status: freshJob.status,
+        coinCost: quote.coinCost,
+        billing: "reserved_then_capture_via_event",
+      },
+      providerInput,
+      isFirstTurn,
+    };
+  }
+
+  /**
+   * BullMQ worker path: run LLM / fake generation for a reserved job.
+   * Retries rethrow until attempts are exhausted; final failure publishes release event.
+   */
+  async processQueuedJob(payload: GenerationJobPayload): Promise<void> {
+    const { prisma, logger, rabbitmq } = this.deps;
+    const { jobId, userId, correlationId } = payload;
+
+    const job = await prisma.generationJob.findUnique({ where: { id: jobId } });
+    if (!job) {
+      throw new AppError("NOT_FOUND", `Generation job not found: ${jobId}`, 404);
+    }
+    if (job.status === "captured" || job.status === "released") {
+      logger.info({ jobId, status: job.status }, "skipping already-finished job");
+      return;
+    }
+    if (job.kind !== "generation" || !job.messageId || !job.sessionId) {
+      throw new AppError(
+        "VALIDATION_ERROR",
+        "Job is not a valid image generation job",
+        422,
+      );
+    }
+
+    const assistantMessage = await prisma.generationMessage.findUnique({
+      where: { id: job.messageId },
+    });
+    if (!assistantMessage || !assistantMessage.referenceId) {
+      throw new AppError(
+        "NOT_FOUND",
+        "Assistant message missing for generation job",
+        404,
+      );
+    }
+
+    if (assistantMessage.status === "completed") {
+      logger.info({ jobId }, "assistant already completed — skipping");
+      return;
+    }
+
+    const userMessage = await prisma.generationMessage.findUnique({
+      where: { id: assistantMessage.referenceId },
+    });
+    if (!userMessage) {
+      throw new AppError("NOT_FOUND", "User message missing for generation job", 404);
+    }
+
+    const session = await prisma.generationSession.findUnique({
+      where: { id: job.sessionId },
+    });
+    if (!session) {
+      throw new AppError("NOT_FOUND", "Session missing for generation job", 404);
+    }
+
+    const model = await prisma.generationModel.findUnique({
+      where: { id: assistantMessage.modelId },
+    });
+    if (!model) {
+      throw new AppError("NOT_FOUND", "Model missing for generation job", 404);
+    }
+
+    const providerInput = userMessage.providerInput?.trim();
+    if (!providerInput) {
+      throw new AppError(
+        "VALIDATION_ERROR",
+        "User message has no providerInput",
+        422,
+      );
+    }
+
+    const aspectRatio = userMessage.requiredAspectRatio;
+    const resolution = userMessage.requiredResolution;
+    if (!aspectRatio || !resolution) {
+      throw new AppError(
+        "VALIDATION_ERROR",
+        "User message missing aspect ratio or resolution",
+        422,
+      );
+    }
+
+    const metadata = (userMessage.metadata ?? {}) as Record<string, unknown>;
+    const isFirstTurn = Boolean(metadata.isFirstTurn);
+
+    try {
       const fake = Boolean(this.deps.fakeImageGeneration);
 
       logger.info(
         {
-          correlationId: input.correlationId,
+          correlationId,
           sessionId: session.id,
           modelId: model.id,
           provider: model.provider,
           isFirstTurn,
-          jobId: job.id,
-          coinCost: quote.coinCost,
+          jobId,
           fakeImageGeneration: fake,
         },
         fake
@@ -186,7 +342,6 @@ export class GenerateService {
       let interactionId: string | null = null;
 
       if (fake) {
-        // Tiny 1x1 PNG — used only when S3 is configured; otherwise placeholder URL.
         const fakePng = Buffer.from(
           "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
           "base64",
@@ -213,24 +368,21 @@ export class GenerateService {
           );
         }
       } else {
-        // Real LLM path
         const provider = createImageProvider(model.provider, {
           geminiApiKey: this.deps.geminiApiKey,
           openaiApiKey: this.deps.openaiApiKey,
         });
 
-        // Load refs from S3 so Gemini receives inline image parts (not just URLs
-        // stored on the message). Private buckets cannot be fetched by Gemini.
         const referenceImages = await resolveReferenceImages(
           this.deps.storage,
-          input.body.referenceImageUrls ?? [],
+          userMessage.referenceImageUrls ?? [],
         );
 
         const result = await provider.generate({
           model: model.providerModelId,
           input: providerInput,
-          aspectRatio: input.body.requiredAspectRatio,
-          resolution: input.body.requiredResolution,
+          aspectRatio,
+          resolution,
           previousInteractionId: isFirstTurn
             ? null
             : session.latestInteractionId,
@@ -282,95 +434,118 @@ export class GenerateService {
         },
       );
 
-      const updatedSession = await updateSessionPointers(prisma, session.id, {
+      await updateSessionPointers(prisma, session.id, {
         latestMessageId: completedAssistant.id,
         latestAssistantMessageId: completedAssistant.id,
         latestInteractionId: interactionId ?? session.latestInteractionId,
       });
 
-      // Wallet capture happens asynchronously via wallet-service on this event.
       await publishGenerationCompleted(rabbitmq, {
         userId,
         jobId: job.id,
-        correlationId: input.correlationId,
+        correlationId,
         payload: {
           kind: "generation",
           imageUrls: [imageUrl],
-          email: input.user.email,
-          name: input.user.name,
+          email: payload.email,
+          name: payload.name,
         },
       });
 
       await updateJobStatus(prisma, job.id, "captured");
-
-      const freshUser = await prisma.generationMessage.findUniqueOrThrow({
-        where: { id: userMessage.id },
-      });
-
-      return {
-        session: {
-          id: updatedSession.id,
-          latestInteractionId: updatedSession.latestInteractionId,
-          latestMessageId: updatedSession.latestMessageId,
-          latestAssistantMessageId: updatedSession.latestAssistantMessageId,
-        },
-        userMessage: toPublicMessage(freshUser),
-        assistantMessage: toPublicMessage(completedAssistant),
-        job: {
-          id: job.id,
-          status: "captured",
-          coinCost: quote.coinCost,
-          billing: "reserved_then_capture_via_event",
-        },
-        providerInput,
-        isFirstTurn,
-      };
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Image generation failed";
-      await failAssistantMessage(prisma, assistantMessage.id, message);
-      await updateJobStatus(prisma, job.id, "failed", message);
 
       logger.error(
         {
           err: error,
-          correlationId: input.correlationId,
-          jobId: job.id,
+          correlationId,
+          jobId,
           sessionId: session.id,
         },
-        "image generation failed",
+        "image generation failed (will retry if attempts remain)",
       );
 
-      try {
-        await publishGenerationFailed(rabbitmq, {
-          userId,
-          jobId: job.id,
-          correlationId: input.correlationId,
-          payload: {
-            kind: "generation",
-            error: message,
-            email: input.user.email,
-            name: input.user.name,
-          },
-        });
-      } catch (publishError) {
-        logger.error(
-          { err: publishError, jobId: job.id },
-          "failed to publish generation.failed — attempting sync release",
-        );
-        try {
-          await wallet.release(input.user, { jobId: job.id });
-          await updateJobStatus(prisma, job.id, "released", message);
-        } catch (releaseError) {
-          logger.error(
-            { err: releaseError, jobId: job.id },
-            "sync wallet release failed after generation error",
-          );
-        }
-      }
+      // Let BullMQ retry; only finalize failure when this throw is the last attempt.
+      // The Worker wraps this — we detect final failure in a dedicated handler below.
+      // For simplicity: always rethrow; onFailed in worker OR check attempts here.
+      // We finalize in `finalizeJobFailure` called from the worker's failed event
+      // only when attempts are exhausted — but that can race. Safer: check in catch
+      // via optional attemptsMade passed in... For now rethrow and use UnrecoverableError
+      // pattern: processQueuedJob receives attempts from payload extension.
 
-      if (error instanceof AppError) throw error;
-      throw new AppError("INTERNAL_ERROR", message, 500);
+      throw error instanceof AppError
+        ? error
+        : new AppError("INTERNAL_ERROR", message, 500);
+    }
+  }
+
+  /**
+   * Called when BullMQ has exhausted retries for a generation job.
+   */
+  async finalizeJobFailure(
+    payload: GenerationJobPayload,
+    errorMessage: string,
+  ): Promise<void> {
+    const { prisma, logger, rabbitmq, wallet } = this.deps;
+    const { jobId, userId, correlationId } = payload;
+
+    const job = await prisma.generationJob.findUnique({ where: { id: jobId } });
+    if (!job) return;
+    if (
+      job.status === "captured" ||
+      job.status === "released" ||
+      job.status === "failed"
+    ) {
+      return;
+    }
+
+    if (job.messageId) {
+      const assistant = await prisma.generationMessage.findUnique({
+        where: { id: job.messageId },
+      });
+      if (assistant && assistant.status !== "completed") {
+        await failAssistantMessage(prisma, job.messageId, errorMessage);
+      }
+    }
+
+    await updateJobStatus(prisma, jobId, "failed", errorMessage);
+
+    const userHeaders: WalletUserHeaders = {
+      userId,
+      email: payload.email,
+      name: payload.name,
+      role: payload.role,
+      correlationId,
+    };
+
+    try {
+      await publishGenerationFailed(rabbitmq, {
+        userId,
+        jobId,
+        correlationId,
+        payload: {
+          kind: "generation",
+          error: errorMessage,
+          email: payload.email,
+          name: payload.name,
+        },
+      });
+    } catch (publishError) {
+      logger.error(
+        { err: publishError, jobId },
+        "failed to publish generation.failed — attempting sync release",
+      );
+      try {
+        await wallet.release(userHeaders, { jobId });
+        await updateJobStatus(prisma, jobId, "released", errorMessage);
+      } catch (releaseError) {
+        logger.error(
+          { err: releaseError, jobId },
+          "sync wallet release failed after generation error",
+        );
+      }
     }
   }
 

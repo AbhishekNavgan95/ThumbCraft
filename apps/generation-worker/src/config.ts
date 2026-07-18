@@ -5,6 +5,9 @@ export const configSchema = baseServiceSchema.extend({
   DATABASE_URL: z.string().url(),
   RABBITMQ_URL: z.string().url(),
 
+  /** Redis for BullMQ image-generation jobs. */
+  REDIS_URL: z.string().url().default("redis://localhost:6379"),
+
   /** Wallet service base URL for sync quote/reserve (capture/release via events). */
   WALLET_SERVICE_URL: z.string().url().default("http://localhost:3002"),
 

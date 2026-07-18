@@ -13,8 +13,8 @@
     "max_reference_images": 14,
     "max_object_references": 14,
     "max_character_references": 0,
-    "supported_resolutions": ["1024x1024"],
-    "supported_image_sizes": ["1024px"],
+    "supported_resolutions": ["1K"],
+    "supported_image_sizes": ["1K"],
     "supported_aspect_ratios": [
       "1:1",
       "3:2",
@@ -52,8 +52,8 @@
     "max_reference_images": 14,
     "max_object_references": 10,
     "max_character_references": 4,
-    "supported_resolutions": ["512x512", "1024x1024", "2048x2048", "4096x4096"],
-    "supported_image_sizes": ["512px", "1024px", "2048px", "4096px"],
+    "supported_resolutions": ["512", "1K", "2K", "4K"],
+    "supported_image_sizes": ["512", "1K", "2K", "4K"],
     "supported_aspect_ratios": [
       "1:1",
       "3:2",
@@ -91,8 +91,8 @@
     "max_reference_images": 11,
     "max_object_references": 6,
     "max_character_references": 5,
-    "supported_resolutions": ["1024x1024", "2048x2048", "4096x4096"],
-    "supported_image_sizes": ["1024px", "2048px", "4096px"],
+    "supported_resolutions": ["1K", "2K", "4K"],
+    "supported_image_sizes": ["1K", "2K", "4K"],
     "supported_aspect_ratios": [
       "1:1",
       "3:2",
@@ -127,8 +127,8 @@
     "supports_interactions_api": true,
     "supports_previous_interaction_id": true,
     "supports_reference_images": true,
-    "supported_resolutions": ["1024x1024"],
-    "supported_image_sizes": ["1024px"],
+    "supported_resolutions": ["1K"],
+    "supported_image_sizes": ["1K"],
     "supported_aspect_ratios": [
       "1:1",
       "3:2",
@@ -144,7 +144,7 @@
     "google_search_grounding": false,
     "google_image_grounding": false,
     "thinking": false,
-    "best_for": ["legacy applications", "fast generation", "1024px output"],
+    "best_for": ["legacy applications", "fast generation", "1K output"],
     "deprecated": false,
     "recommended_replacement": "gemini-3.1-flash-lite-image"
   }
