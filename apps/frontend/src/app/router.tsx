@@ -29,6 +29,10 @@ export function AppRouter() {
           <Route index element={<Navigate to="new" replace />} />
           <Route path="new" element={<NewChatPage />} />
           <Route path="sessions/:sessionId" element={<SessionChatPage />} />
+          <Route
+            path="archived"
+            element={<Navigate to="/dashboard/new" replace />}
+          />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="wallet/confirm" element={<WalletConfirmPage />} />
           <Route

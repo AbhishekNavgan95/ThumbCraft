@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState } from "react"
-import { AlertCircle, ImageIcon, Loader2 } from "lucide-react"
+import {
+  AlertCircle,
+  Check,
+  Copy,
+  Download,
+  ImageIcon,
+  Link2,
+  Loader2,
+} from "lucide-react"
+import { toast } from "sonner"
 import { ChatComposer } from "@/components/generation/ChatComposer"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -12,8 +22,8 @@ import { cn } from "@/lib/utils"
 import { useChatStore } from "@/stores/chat-store"
 import type { GenerationMessage } from "@/types/generation"
 
-/** Fixed 4:3 thumbnail frame in chat. */
-const THUMB_FRAME = "h-[270px] w-[360px] max-w-full"
+/** Fixed thumbnail frame in chat. */
+const THUMB_FRAME = "aspect-[5/3] w-full max-w-[390px]"
 
 /** Shared column width for thread + composer alignment. */
 const CHAT_COLUMN = "mx-auto w-full max-w-3xl"
@@ -26,6 +36,57 @@ function formatMessageTime(iso: string) {
     minute: "2-digit",
   })
 }
+
+async function fetchImageBlob(url: string) {
+  const response = await fetch(url)
+  if (!response.ok) throw new Error("Failed to fetch image")
+  return response.blob()
+}
+
+async function blobAsPng(blob: Blob) {
+  if (blob.type === "image/png") return blob
+  const bitmap = await createImageBitmap(blob)
+  const canvas = document.createElement("canvas")
+  canvas.width = bitmap.width
+  canvas.height = bitmap.height
+  const ctx = canvas.getContext("2d")
+  if (!ctx) throw new Error("Could not prepare image")
+  ctx.drawImage(bitmap, 0, 0)
+  bitmap.close()
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (png) => (png ? resolve(png) : reject(new Error("Could not convert image"))),
+      "image/png",
+    )
+  })
+}
+
+async function copyImageToClipboard(url: string) {
+  const blob = await fetchImageBlob(url)
+  const png = await blobAsPng(blob)
+  await navigator.clipboard.write([
+    new ClipboardItem({ "image/png": png }),
+  ])
+}
+
+async function downloadImage(url: string) {
+  const blob = await fetchImageBlob(url)
+  const extension = blob.type.split("/")[1]?.split("+")[0] || "png"
+  const objectUrl = URL.createObjectURL(blob)
+  const anchor = document.createElement("a")
+  anchor.href = objectUrl
+  anchor.download = `thumbnail-${Date.now()}.${extension}`
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  URL.revokeObjectURL(objectUrl)
+}
+
+async function copyImageUrl(url: string) {
+  await navigator.clipboard.writeText(url)
+}
+
+type ImageActionKind = "copy-image" | "download" | "copy-url"
 
 function MessageHeader({
   label,
@@ -72,6 +133,154 @@ function GenerationLoader() {
           </p>
         </div>
       </div>
+    </div>
+  )
+}
+
+function useImageActions(url: string) {
+  const [busy, setBusy] = useState<ImageActionKind | null>(null)
+  const [done, setDone] = useState<ImageActionKind | null>(null)
+  const doneTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (doneTimer.current) clearTimeout(doneTimer.current)
+    }
+  }, [])
+
+  const run = async (kind: ImageActionKind, action: () => Promise<void>) => {
+    if (busy) return
+    setBusy(kind)
+    try {
+      await action()
+      setDone(kind)
+      if (doneTimer.current) clearTimeout(doneTimer.current)
+      doneTimer.current = setTimeout(() => setDone(null), 1600)
+    } catch {
+      const messages: Record<ImageActionKind, string> = {
+        "copy-image": "Could not copy image",
+        download: "Could not download image",
+        "copy-url": "Could not copy URL",
+      }
+      toast.error(messages[kind])
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  return {
+    busy,
+    done,
+    copyImage: () => run("copy-image", () => copyImageToClipboard(url)),
+    download: () => run("download", () => downloadImage(url)),
+    copyUrl: () => run("copy-url", () => copyImageUrl(url)),
+  }
+}
+
+function ActionIcon({
+  kind,
+  busy,
+  done,
+}: {
+  kind: ImageActionKind
+  busy: ImageActionKind | null
+  done: ImageActionKind | null
+}) {
+  if (busy === kind) return <Loader2 className="animate-spin" />
+  if (done === kind) return <Check />
+  if (kind === "copy-image") return <Copy />
+  if (kind === "download") return <Download />
+  return <Link2 />
+}
+
+function ImageHoverActions({ url }: { url: string }) {
+  const actions = useImageActions(url)
+
+  return (
+    <div
+      className={cn(
+        "absolute right-2 bottom-2 z-10 flex gap-1 rounded-xl bg-black/70 p-1 shadow-lg backdrop-blur-sm",
+        "opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100",
+      )}
+    >
+      <Button
+        type="button"
+        size="icon-sm"
+        variant="secondary"
+        className="bg-white text-foreground hover:bg-white/90"
+        aria-label="Copy image"
+        title="Copy image"
+        disabled={Boolean(actions.busy)}
+        onClick={(event) => {
+          event.stopPropagation()
+          void actions.copyImage()
+        }}
+      >
+        <ActionIcon kind="copy-image" busy={actions.busy} done={actions.done} />
+      </Button>
+      <Button
+        type="button"
+        size="icon-sm"
+        variant="secondary"
+        className="bg-white text-foreground hover:bg-white/90"
+        aria-label="Download image"
+        title="Download"
+        disabled={Boolean(actions.busy)}
+        onClick={(event) => {
+          event.stopPropagation()
+          void actions.download()
+        }}
+      >
+        <ActionIcon kind="download" busy={actions.busy} done={actions.done} />
+      </Button>
+      <Button
+        type="button"
+        size="icon-sm"
+        variant="secondary"
+        className="bg-white text-foreground hover:bg-white/90"
+        aria-label="Copy image URL"
+        title="Copy URL"
+        disabled={Boolean(actions.busy)}
+        onClick={(event) => {
+          event.stopPropagation()
+          void actions.copyUrl()
+        }}
+      >
+        <ActionIcon kind="copy-url" busy={actions.busy} done={actions.done} />
+      </Button>
+    </div>
+  )
+}
+
+function ImagePreviewActions({ url }: { url: string }) {
+  const actions = useImageActions(url)
+
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-2">
+      <Button
+        type="button"
+        disabled={Boolean(actions.busy)}
+        onClick={() => void actions.copyImage()}
+      >
+        <ActionIcon kind="copy-image" busy={actions.busy} done={actions.done} />
+        Copy image
+      </Button>
+      <Button
+        type="button"
+        disabled={Boolean(actions.busy)}
+        onClick={() => void actions.download()}
+      >
+        <ActionIcon kind="download" busy={actions.busy} done={actions.done} />
+        Download
+      </Button>
+      <Button
+        type="button"
+        disabled={Boolean(actions.busy)}
+        onClick={() => void actions.copyUrl()}
+      >
+        <ActionIcon kind="copy-url" busy={actions.busy} done={actions.done} />
+        Copy URL
+      </Button>
     </div>
   )
 }
@@ -148,23 +357,28 @@ function AssistantMessage({
           <p>{message.error || "Generation failed"}</p>
         </div>
       ) : message.imageUrl ? (
-        <button
-          type="button"
-          onClick={() => onPreview(message.imageUrl!)}
+        <div
           className={cn(
-            "group relative block overflow-hidden rounded-2xl border border-border/70 bg-card text-left shadow-xs transition-opacity hover:opacity-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+            "group relative overflow-hidden rounded-2xl border border-border/70 bg-card shadow-xs",
             THUMB_FRAME,
           )}
-          aria-label="Preview generated thumbnail"
         >
-          <img
-            src={message.imageUrl}
-            alt="Generated thumbnail"
-            width={200}
-            height={200}
-            className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-          />
-        </button>
+          <button
+            type="button"
+            onClick={() => onPreview(message.imageUrl!)}
+            className="absolute inset-0 block size-full text-left transition-opacity hover:opacity-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            aria-label="Preview generated thumbnail"
+          >
+            <img
+              src={message.imageUrl}
+              alt="Generated thumbnail"
+              width={390}
+              height={234}
+              className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            />
+          </button>
+          <ImageHoverActions url={message.imageUrl} />
+        </div>
       ) : (
         <div className="rounded-2xl border border-border/70 bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
           Waiting for result…
@@ -277,12 +491,15 @@ export function ChatThread({ className }: ChatThreadProps) {
           <DialogTitle>Thumbnail preview</DialogTitle>
           <DialogDescription>Full-size generated thumbnail</DialogDescription>
           {previewUrl ? (
-            <div className="overflow-hidden rounded-2xl bg-black shadow-2xl ring-1 ring-white/10">
-              <img
-                src={previewUrl}
-                alt="Generated thumbnail preview"
-                className="max-h-[85vh] w-full object-contain"
-              />
+            <div className="flex flex-col gap-4">
+              <div className="overflow-hidden rounded-2xl bg-black shadow-2xl ring-1 ring-white/10">
+                <img
+                  src={previewUrl}
+                  alt="Generated thumbnail preview"
+                  className="max-h-[75vh] w-full object-contain"
+                />
+              </div>
+              <ImagePreviewActions url={previewUrl} />
             </div>
           ) : null}
         </DialogContent>

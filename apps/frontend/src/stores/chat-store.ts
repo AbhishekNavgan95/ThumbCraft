@@ -12,6 +12,10 @@ type ChatState = {
   isLoadingSessions: boolean
   sessionsError: string | null
 
+  archivedSessions: GenerationSession[]
+  isLoadingArchivedSessions: boolean
+  archivedSessionsError: string | null
+
   activeSessionId: string | null
   messages: GenerationMessage[]
   isLoadingMessages: boolean
@@ -22,11 +26,22 @@ type ChatState = {
   generationError: string | null
 
   loadSessions: () => Promise<void>
+  loadArchivedSessions: () => Promise<void>
   renameSession: (sessionId: string, title: string) => Promise<boolean>
+  setSessionPinned: (sessionId: string, pinned: boolean) => Promise<boolean>
+  archiveSession: (sessionId: string) => Promise<boolean>
+  unarchiveSession: (sessionId: string) => Promise<boolean>
   selectSession: (sessionId: string) => Promise<void>
   startGenerationFromContext: () => Promise<string | null>
   continueGeneration: (prompt: string) => Promise<boolean>
   resetChat: () => void
+}
+
+function sortSessions(sessions: GenerationSession[]) {
+  return [...sessions].sort((a, b) => {
+    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
+    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  })
 }
 
 function findLastUserMessage(messages: GenerationMessage[]) {
@@ -301,6 +316,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
   isLoadingSessions: false,
   sessionsError: null,
 
+  archivedSessions: [],
+  isLoadingArchivedSessions: false,
+  archivedSessionsError: null,
+
   activeSessionId: null,
   messages: [],
   isLoadingMessages: false,
@@ -318,7 +337,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         limit: 50,
       })
       set({
-        sessions: data.sessions,
+        sessions: sortSessions(data.sessions),
         isLoadingSessions: false,
         sessionsError: null,
       })
@@ -326,6 +345,29 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set({
         isLoadingSessions: false,
         sessionsError: getApiErrorMessage(error, "Failed to load sessions"),
+      })
+    }
+  },
+
+  loadArchivedSessions: async () => {
+    set({ isLoadingArchivedSessions: true, archivedSessionsError: null })
+    try {
+      const { data } = await api.sessions.list({
+        status: "archived",
+        limit: 50,
+      })
+      set({
+        archivedSessions: sortSessions(data.sessions),
+        isLoadingArchivedSessions: false,
+        archivedSessionsError: null,
+      })
+    } catch (error) {
+      set({
+        isLoadingArchivedSessions: false,
+        archivedSessionsError: getApiErrorMessage(
+          error,
+          "Failed to load archived chats",
+        ),
       })
     }
   },
@@ -338,14 +380,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     // Optimistic update so the sidebar feels instant.
     set({
-      sessions: get().sessions.map((session) =>
-        session.id === sessionId
-          ? {
-              ...session,
-              title: nextTitle,
-              updatedAt: new Date().toISOString(),
-            }
-          : session,
+      sessions: sortSessions(
+        get().sessions.map((session) =>
+          session.id === sessionId
+            ? {
+                ...session,
+                title: nextTitle,
+                updatedAt: new Date().toISOString(),
+              }
+            : session,
+        ),
       ),
     })
 
@@ -354,16 +398,127 @@ export const useChatStore = create<ChatState>((set, get) => ({
         title: nextTitle,
       })
       set({
-        sessions: get().sessions.map((session) =>
-          session.id === sessionId ? data.session : session,
+        sessions: sortSessions(
+          get().sessions.map((session) =>
+            session.id === sessionId ? data.session : session,
+          ),
         ),
       })
       return true
     } catch {
       set({
-        sessions: get().sessions.map((session) =>
-          session.id === sessionId ? previous : session,
+        sessions: sortSessions(
+          get().sessions.map((session) =>
+            session.id === sessionId ? previous : session,
+          ),
         ),
+      })
+      return false
+    }
+  },
+
+  setSessionPinned: async (sessionId, pinned) => {
+    const previous = get().sessions.find((session) => session.id === sessionId)
+    if (!previous || previous.pinned === pinned) return previous?.pinned === pinned
+
+    set({
+      sessions: sortSessions(
+        get().sessions.map((session) =>
+          session.id === sessionId
+            ? {
+                ...session,
+                pinned,
+                updatedAt: new Date().toISOString(),
+              }
+            : session,
+        ),
+      ),
+    })
+
+    try {
+      const { data } = await api.sessions.update(sessionId, { pinned })
+      set({
+        sessions: sortSessions(
+          get().sessions.map((session) =>
+            session.id === sessionId ? data.session : session,
+          ),
+        ),
+      })
+      return true
+    } catch {
+      set({
+        sessions: sortSessions(
+          get().sessions.map((session) =>
+            session.id === sessionId ? previous : session,
+          ),
+        ),
+      })
+      return false
+    }
+  },
+
+  archiveSession: async (sessionId) => {
+    const previous = get().sessions.find((session) => session.id === sessionId)
+    if (!previous) return false
+
+    const wasActive = get().activeSessionId === sessionId
+    set({
+      sessions: get().sessions.filter((session) => session.id !== sessionId),
+    })
+    if (wasActive) {
+      get().resetChat()
+    }
+
+    try {
+      const { data } = await api.sessions.update(sessionId, {
+        status: "archived",
+      })
+      set({
+        archivedSessions: sortSessions([
+          data.session,
+          ...get().archivedSessions.filter(
+            (session) => session.id !== sessionId,
+          ),
+        ]),
+      })
+      return true
+    } catch {
+      set({
+        sessions: sortSessions([...get().sessions, previous]),
+      })
+      return false
+    }
+  },
+
+  unarchiveSession: async (sessionId) => {
+    const previous = get().archivedSessions.find(
+      (session) => session.id === sessionId,
+    )
+    if (!previous) return false
+
+    set({
+      archivedSessions: get().archivedSessions.filter(
+        (session) => session.id !== sessionId,
+      ),
+    })
+
+    try {
+      const { data } = await api.sessions.update(sessionId, {
+        status: "active",
+      })
+      set({
+        sessions: sortSessions([
+          data.session,
+          ...get().sessions.filter((session) => session.id !== sessionId),
+        ]),
+      })
+      return true
+    } catch {
+      set({
+        archivedSessions: sortSessions([
+          ...get().archivedSessions,
+          previous,
+        ]),
       })
       return false
     }
