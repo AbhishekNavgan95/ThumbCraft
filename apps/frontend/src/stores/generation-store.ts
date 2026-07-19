@@ -152,9 +152,20 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
     })),
 
   patchPreferences: (patch) =>
-    set((state) => ({
-      preferences: { ...state.preferences, ...patch },
-    })),
+    set((state) => {
+      const next: ThumbnailPreferences = { ...state.preferences }
+      ;(Object.keys(patch) as Array<keyof ThumbnailPreferences>).forEach(
+        (key) => {
+          const value = patch[key]
+          if (value === undefined) {
+            delete next[key]
+          } else {
+            Object.assign(next, { [key]: value })
+          }
+        },
+      )
+      return { preferences: next }
+    }),
 
   setStep: (step) => set({ step }),
   setSessionId: (sessionId) => set({ sessionId }),

@@ -257,7 +257,7 @@ export function PromptComposer({ onContinue, className }: PromptComposerProps) {
           placeholder={
             mode === "image"
               ? "Describe how to use your reference image…"
-              : "Write a thumbnail prompt…"
+              : "Write a prompt…"
           }
           rows={3}
           className={cn(

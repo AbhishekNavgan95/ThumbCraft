@@ -1,6 +1,7 @@
 import { useEffect } from "react"
 import { useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
+import { PreferenceQuestionnaire } from "@/components/generation/PreferenceQuestionnaire"
 import { PromptComposer } from "@/components/generation/PromptComposer"
 import { SiteHeader } from "@/components/home/SiteHeader"
 import { Button } from "@/components/ui/button"
@@ -22,12 +23,14 @@ export function GeneratePage() {
   const openAuthDrawer = useAuthStore((state) => state.openAuthDrawer)
 
   const storeMode = useGenerationStore((state) => state.mode)
+  const step = useGenerationStore((state) => state.step)
   const models = useGenerationStore((state) => state.models)
   const isLoadingModels = useGenerationStore((state) => state.isLoadingModels)
   const modelsError = useGenerationStore((state) => state.modelsError)
   const startFlow = useGenerationStore((state) => state.startFlow)
   const loadModels = useGenerationStore((state) => state.loadModels)
   const commitPromptStep = useGenerationStore((state) => state.commitPromptStep)
+  const setStep = useGenerationStore((state) => state.setStep)
 
   useEffect(() => {
     if (storeMode !== mode) {
@@ -41,7 +44,6 @@ export function GeneratePage() {
       openAuthDrawer("signup")
       return
     }
-    // Same data-fetch pattern as CategoriesSection / WalletPage.
     void loadModels()
   }, [isAuthenticated, isBootstrapping, loadModels, openAuthDrawer])
 
@@ -52,11 +54,13 @@ export function GeneratePage() {
           ? "Add a prompt and wait for uploads to finish."
           : "Add a prompt and choose a model first.",
       )
-      return
     }
+  }
 
+  const handlePreferencesComplete = () => {
+    setStep("generating")
     const snapshot = useGenerationStore.getState()
-    console.info("[generate] context ready", {
+    console.info("[generate] preferences complete", {
       mode: snapshot.mode,
       prompt: snapshot.prompt,
       modelId: snapshot.modelId,
@@ -68,11 +72,13 @@ export function GeneratePage() {
       preferences: snapshot.preferences,
       step: snapshot.step,
     })
-
-    toast.message("Prompt saved", {
-      description: "Reference questions come next — hang tight.",
+    toast.success("Preferences saved", {
+      description: "Generation comes next — hang tight.",
     })
   }
+
+  const showQuestionnaire = step === "preferences"
+  const showGenerating = step === "generating"
 
   return (
     <div className="relative isolate flex min-h-svh w-full flex-col bg-background">
@@ -80,18 +86,22 @@ export function GeneratePage() {
 
       <div className="relative z-10 mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 sm:px-6">
         <main className="flex flex-1 flex-col items-center justify-center py-8 sm:py-10">
-          <div className="mb-8 w-full space-y-2 text-center sm:mb-8">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-              {mode === "image" ? "Start from an image" : "Start from a prompt"}
-            </h1>
-            <p className="mx-auto text-sm text-muted-foreground sm:text-base">
-              {mode === "image"
-                ? "Attach a reference, pick a model, then describe the cover you want."
-                : "Describe the thumbnail, choose a model and framing, then continue."}
-            </p>
-          </div>
+          {!showQuestionnaire && !showGenerating ? (
+            <div className="mb-8 w-full space-y-2 text-center sm:mb-8">
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                {mode === "image"
+                  ? "Start from an image"
+                  : "Start from a prompt"}
+              </h1>
+              <p className="mx-auto text-sm text-muted-foreground sm:text-base">
+                {mode === "image"
+                  ? "Attach a reference, pick a model, then describe the cover you want."
+                  : "Describe the thumbnail, choose a model and framing, then continue."}
+              </p>
+            </div>
+          ) : null}
 
-          <div className="w-full max-w-2xl">
+          <div className="mx-auto w-full max-w-2xl">
             {!isAuthenticated && !isBootstrapping ? (
               <div className="rounded-2xl border border-border bg-card/80 px-5 py-8 text-center shadow-xs">
                 <p className="text-sm text-muted-foreground">
@@ -104,6 +114,27 @@ export function GeneratePage() {
                   Sign up to continue
                 </Button>
               </div>
+            ) : showGenerating ? (
+              <div className="rounded-2xl border border-border bg-card/90 px-5 py-10 text-center shadow-xs">
+                <p className="text-base font-medium text-foreground">
+                  Preferences locked in
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Generation will start from here in the next step.
+                </p>
+                <Button
+                  variant="outline"
+                  className="mt-5 rounded-full"
+                  onClick={() => setStep("preferences")}
+                >
+                  Review preferences
+                </Button>
+              </div>
+            ) : showQuestionnaire ? (
+              <PreferenceQuestionnaire
+                onComplete={handlePreferencesComplete}
+                onBackToPrompt={() => setStep("prompt")}
+              />
             ) : modelsError && models.length === 0 ? (
               <div className="rounded-2xl border border-destructive/30 bg-destructive/5 px-5 py-6 text-center">
                 <p className="text-sm text-destructive">{modelsError}</p>
