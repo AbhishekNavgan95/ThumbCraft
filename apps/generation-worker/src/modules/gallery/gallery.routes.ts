@@ -21,7 +21,7 @@ import {
 
 /**
  * Template gallery API — categories + thumbnail templates.
- * Customers see active items; admins manage full CRUD.
+ * Public browse (active items); admins manage full CRUD when authenticated.
  */
 export async function registerGalleryRoutes(
   app: FastifyInstance,
@@ -32,7 +32,7 @@ export async function registerGalleryRoutes(
     "/api/template-categories",
     {
       preHandler: async (request) => {
-        await app.requireAuth(request);
+        await app.optionalAuth(request);
       },
     },
     async (request, reply) => {
@@ -47,7 +47,7 @@ export async function registerGalleryRoutes(
     "/api/template-categories/:categoryId",
     {
       preHandler: async (request) => {
-        await app.requireAuth(request);
+        await app.optionalAuth(request);
       },
     },
     async (request, reply) => {
@@ -111,7 +111,7 @@ export async function registerGalleryRoutes(
     "/api/templates",
     {
       preHandler: async (request) => {
-        await app.requireAuth(request);
+        await app.optionalAuth(request);
       },
     },
     async (request, reply) => {
@@ -130,7 +130,7 @@ export async function registerGalleryRoutes(
     "/api/templates/:templateId",
     {
       preHandler: async (request) => {
-        await app.requireAuth(request);
+        await app.optionalAuth(request);
       },
     },
     async (request, reply) => {

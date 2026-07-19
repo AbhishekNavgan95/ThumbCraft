@@ -14,7 +14,8 @@
     "db:reset": "prisma migrate reset --force",
     "db:push": "prisma db push",
     "db:deploy": "prisma migrate deploy",
-    "db:seed:models": "tsx prisma/seed-models.ts"
+    "db:seed:models": "tsx prisma/seed-models.ts",
+    "db:seed:categories": "tsx prisma/seed-categories.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.758.0",

@@ -18,6 +18,7 @@ Keep this file as the only living todo list for generation-worker work.
 - [x] **Fake generation mode** — `FAKE_IMAGE_GENERATION` for E2E without LLM
 - [x] **Async generate (BullMQ)** — HTTP enqueues job (202); BullMQ worker runs Gemini; poll `GET /api/jobs/:jobId`
 - [x] **Seed resolutions** — Gemini `image_size` values (`512`, `1K`, `2K`, `4K`)
+- [x] **S3 production config** — private bucket + CloudFront / CDN wiring
 
 ## Next
 
@@ -26,7 +27,6 @@ Keep this file as the only living todo list for generation-worker work.
 ## Later / pending
 
 - [ ] **AI Review** — vision critique attached to assistant messages
-- [ ] **S3 production config** — private bucket + CloudFront / CDN wiring
 
 ## Won’t do
 

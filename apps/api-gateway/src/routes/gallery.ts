@@ -1,6 +1,7 @@
 /**
  * Template gallery proxies (categories + templates).
- * Auth: gateway JWT; admin mutations use requireAdmin.
+ * Public: GET categories + templates (optional JWT for admin views).
+ * Mutations: admin only.
  * Downstream: generation-worker /api/template-categories | /api/templates.
  */
 import type { FastifyInstance } from "fastify";
@@ -11,8 +12,8 @@ export async function registerGalleryRoutes(
   app: FastifyInstance,
   config: GatewayConfig,
 ): Promise<void> {
-  const authHook = async (request: import("fastify").FastifyRequest) => {
-    await app.requireAuth(request);
+  const optionalAuthHook = async (request: import("fastify").FastifyRequest) => {
+    await app.optionalAuth(request);
   };
 
   const adminHook = async (request: import("fastify").FastifyRequest) => {
@@ -25,7 +26,7 @@ export async function registerGalleryRoutes(
   // ── Categories ───────────────────────────────────────────────────
   app.get(
     "/api/template-categories",
-    { preHandler: authHook },
+    { preHandler: optionalAuthHook },
     async (request, reply) => {
       const result = await proxyJson(categoriesBase, {
         method: "GET",
@@ -37,7 +38,7 @@ export async function registerGalleryRoutes(
 
   app.get(
     "/api/template-categories/:categoryId",
-    { preHandler: authHook },
+    { preHandler: optionalAuthHook },
     async (request, reply) => {
       const { categoryId } = request.params as { categoryId: string };
       const result = await proxyJson(
@@ -106,7 +107,7 @@ export async function registerGalleryRoutes(
   // ── Templates ────────────────────────────────────────────────────
   app.get(
     "/api/templates",
-    { preHandler: authHook },
+    { preHandler: optionalAuthHook },
     async (request, reply) => {
       const query = request.url.includes("?")
         ? request.url.slice(request.url.indexOf("?"))
@@ -121,7 +122,7 @@ export async function registerGalleryRoutes(
 
   app.get(
     "/api/templates/:templateId",
-    { preHandler: authHook },
+    { preHandler: optionalAuthHook },
     async (request, reply) => {
       const { templateId } = request.params as { templateId: string };
       const result = await proxyJson(

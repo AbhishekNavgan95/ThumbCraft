@@ -49,6 +49,33 @@ export async function requireAuth(
   }
 }
 
+/** Attach user when a valid Bearer token is present; otherwise no-op. */
+export async function optionalAuth(
+  config: GatewayConfig,
+  request: FastifyRequest,
+): Promise<void> {
+  const authHeader = request.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
+    return;
+  }
+
+  const token = authHeader.slice("Bearer ".length);
+
+  try {
+    const decoded = jwt.verify(token, config.JWT_SECRET);
+    if (typeof decoded !== "object" || decoded === null) {
+      return;
+    }
+
+    const user = parseAuthUser(decoded as jwt.JwtPayload);
+    if (user) {
+      request.user = user;
+    }
+  } catch {
+    // Public routes ignore invalid tokens.
+  }
+}
+
 export async function requireAdmin(
   config: GatewayConfig,
   request: FastifyRequest,
@@ -65,12 +92,14 @@ export async function registerAuthPlugin(
 ): Promise<void> {
   app.decorateRequest("user", undefined);
   app.decorate("requireAuth", async (request) => requireAuth(config, request));
+  app.decorate("optionalAuth", async (request) => optionalAuth(config, request));
   app.decorate("requireAdmin", async (request) => requireAdmin(config, request));
 }
 
 declare module "fastify" {
   interface FastifyInstance {
     requireAuth: (request: FastifyRequest) => Promise<void>;
+    optionalAuth: (request: FastifyRequest) => Promise<void>;
     requireAdmin: (request: FastifyRequest) => Promise<void>;
   }
 }
