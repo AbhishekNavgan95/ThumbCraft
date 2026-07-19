@@ -53,8 +53,12 @@ export function PromptComposer({ onContinue, className }: PromptComposerProps) {
     const el = textareaRef.current
     if (!el) return
     el.style.height = "0px"
-    el.style.height = `${Math.min(el.scrollHeight, 220)}px`
+    el.style.height = `${Math.min(el.scrollHeight, 240)}px`
   }, [prompt])
+
+  useEffect(() => {
+    textareaRef.current?.focus()
+  }, [])
 
   const isUploading = references.some((ref) => ref.status === "uploading")
   const hasReadyReference = references.some(
@@ -101,21 +105,21 @@ export function PromptComposer({ onContinue, className }: PromptComposerProps) {
     <div className={cn("w-full", className)}>
       <div
         className={cn(
-          "rounded-[1.75rem] border border-border/80 bg-card shadow-md",
-          "ring-1 ring-black/4 transition-[box-shadow,ring-color]",
-          "focus-within:shadow-lg focus-within:ring-primary/15",
+          "rounded-3xl border border-border/70 bg-card/95 shadow-lg backdrop-blur-sm",
+          "ring-1 ring-black/3 transition-[box-shadow,ring-color]",
+          "focus-within:shadow-xl focus-within:ring-primary/20",
         )}
       >
         {references.length > 0 ? (
-          <div className="flex flex-wrap gap-2 border-b border-border/60 px-4 pt-4 pb-3">
+          <div className="flex flex-wrap gap-2 border-b border-border/50 px-4 pt-4 pb-3">
             {references.map((ref) => (
               <div
                 key={ref.id}
                 className={cn(
-                  "group relative size-14 overflow-hidden rounded-xl border bg-muted",
+                  "group relative size-14 overflow-hidden rounded-2xl border bg-muted",
                   ref.status === "error"
                     ? "border-destructive/50"
-                    : "border-border",
+                    : "border-border/80",
                 )}
                 title={ref.error ?? ref.fileName}
               >
@@ -170,18 +174,18 @@ export function PromptComposer({ onContinue, className }: PromptComposerProps) {
           onPaste={handlePaste}
           placeholder={
             mode === "image"
-              ? "Describe how to use your reference image…"
-              : "Write a prompt…"
+              ? "Describe the transformation you want…"
+              : "Describe the thumbnail you want the agent to create…"
           }
-          rows={3}
+          rows={4}
           className={cn(
             "block w-full resize-none bg-transparent px-5 pt-5 pb-3",
-            "text-[15px] leading-relaxed text-foreground placeholder:text-muted-foreground",
+            "text-[15px] leading-relaxed text-foreground placeholder:text-muted-foreground/80",
             "outline-none",
           )}
         />
 
-        <div className="flex flex-wrap items-center justify-between gap-2 px-3 pb-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/40 px-3 py-3">
           <div className="flex items-center gap-1">
             <input
               ref={fileInputRef}
@@ -220,10 +224,7 @@ export function PromptComposer({ onContinue, className }: PromptComposerProps) {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <EnhancePromptControl
-              prompt={prompt}
-              onAccept={setPrompt}
-            />
+            <EnhancePromptControl prompt={prompt} onAccept={setPrompt} />
           </div>
 
           <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
@@ -257,7 +258,7 @@ export function PromptComposer({ onContinue, className }: PromptComposerProps) {
             <Button
               type="button"
               size="icon-sm"
-              className="rounded-full"
+              className="ml-0.5 rounded-full"
               disabled={!canSubmit}
               onClick={onContinue}
               aria-label="Continue"
@@ -268,10 +269,8 @@ export function PromptComposer({ onContinue, className }: PromptComposerProps) {
         </div>
       </div>
 
-      <p className="mt-3 text-center text-xs text-muted-foreground">
-        {mode === "image"
-          ? "Add a reference image, then describe the thumbnail you want."
-          : "Thumbcraft may refine your prompt in the next step."}
+      <p className="mt-3 text-center text-[11px] text-muted-foreground">
+        Enter to continue · Shift+Enter for a new line
       </p>
     </div>
   )
