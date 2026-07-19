@@ -1,26 +1,22 @@
-import { useEffect } from "react"
-import { NavLink, Navigate, Outlet, useLocation } from "react-router-dom"
-import { History, Wallet } from "lucide-react"
-import { SiteHeader } from "@/components/home/SiteHeader"
+import { useEffect, useState } from "react"
+import { Navigate, Outlet, useLocation } from "react-router-dom"
+import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar"
 import { Skeleton } from "@/components/ui/skeleton"
-import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth-store"
 
-const navItems = [
-  { to: "/dashboard/wallet", label: "Wallet", icon: Wallet, end: true },
-  {
-    to: "/dashboard/transactions",
-    label: "Transactions",
-    icon: History,
-    end: true,
-  },
-] as const
+function isImmersiveRoute(pathname: string) {
+  return (
+    pathname.startsWith("/dashboard/new") ||
+    pathname.startsWith("/dashboard/sessions/")
+  )
+}
 
 export function DashboardLayout() {
   const location = useLocation()
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const isBootstrapping = useAuthStore((state) => state.isBootstrapping)
   const openAuthDrawer = useAuthStore((state) => state.openAuthDrawer)
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   const isConfirmRoute = location.pathname.startsWith(
     "/dashboard/wallet/confirm",
@@ -35,9 +31,14 @@ export function DashboardLayout() {
 
   if (isBootstrapping) {
     return (
-      <div className="flex min-h-svh flex-col bg-background">
-        <SiteHeader />
-        <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 py-10 sm:px-6">
+      <div className="flex min-h-svh bg-background">
+        <div className="hidden w-64 border-r border-border/70 p-3 md:block">
+          <Skeleton className="mb-4 h-8 w-32" />
+          <Skeleton className="mb-2 h-10 w-full" />
+          <Skeleton className="mb-2 h-10 w-full" />
+          <Skeleton className="h-40 w-full" />
+        </div>
+        <div className="flex flex-1 flex-col gap-4 p-6">
           <Skeleton className="h-8 w-40" />
           <Skeleton className="h-64 w-full rounded-xl" />
         </div>
@@ -45,42 +46,44 @@ export function DashboardLayout() {
     )
   }
 
-  // Keep Stripe return URL intact while prompting login.
   if (!isAuthenticated && !isConfirmRoute) {
     return <Navigate to="/" replace state={{ from: location.pathname }} />
   }
 
   return (
-    <div className="flex min-h-svh flex-col bg-background">
-      <SiteHeader />
+    <div className="flex h-svh overflow-hidden bg-background">
+      <div className="hidden h-full md:flex">
+        <DashboardSidebar />
+      </div>
 
-      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 sm:px-6">
-        {!isConfirmRoute ? (
-          <nav className="flex gap-1 border-b border-border pt-4">
-            {navItems.map(({ to, label, icon: Icon, end }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={end}
-                className={({ isActive }) =>
-                  cn(
-                    "inline-flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors",
-                    isActive
-                      ? "border-primary text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground",
-                  )
-                }
-              >
-                <Icon className="size-3.5" />
-                {label}
-              </NavLink>
-            ))}
-          </nav>
-        ) : null}
-
-        <div className="flex min-h-0 flex-1 flex-col py-6 sm:py-8">
-          <Outlet />
+      {mobileOpen ? (
+        <div className="fixed inset-0 z-50 flex md:hidden">
+          <button
+            type="button"
+            className="absolute inset-0 bg-foreground/30"
+            aria-label="Close menu"
+            onClick={() => setMobileOpen(false)}
+          />
+          <div className="relative z-10 h-full shadow-xl">
+            <DashboardSidebar onNavigate={() => setMobileOpen(false)} />
+          </div>
         </div>
+      ) : null}
+
+      <div className="flex min-w-0 flex-1 flex-col">
+
+
+        <main className="min-h-0 flex-1 overflow-y-auto">
+          <div
+            className={
+              isImmersiveRoute(location.pathname)
+                ? "flex h-full min-h-0 w-full flex-col"
+                : "flex h-full w-full flex-col px-4 py-4"
+            }
+          >
+            <Outlet />
+          </div>
+        </main>
       </div>
     </div>
   )

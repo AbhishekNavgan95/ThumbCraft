@@ -45,7 +45,7 @@ export type ReferenceImage = {
   error?: string
 }
 
-export type GenerationStep = "prompt" | "preferences" | "generating"
+export type GenerationStep = "prompt" | "preferences" | "chat"
 
 export type ReferenceUploadResponse = {
   url: string
@@ -53,6 +53,127 @@ export type ReferenceUploadResponse = {
   contentType: string
   size: number
   folder: "references"
+}
+
+export type SessionStatus = "active" | "archived"
+
+export type GenerationSession = {
+  id: string
+  userId: string
+  title: string | null
+  category: string | null
+  pinned: boolean
+  latestInteractionId: string | null
+  latestMessageId: string | null
+  latestAssistantMessageId: string | null
+  status: SessionStatus
+  messageCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+export type ListSessionsResponse = {
+  sessions: GenerationSession[]
+  total: number
+  limit: number
+  offset: number
+  hasMore: boolean
+}
+
+export type CreateSessionResponse = {
+  session: GenerationSession
+  reused: boolean
+}
+
+export type MessageRole = "user" | "assistant"
+export type MessageStatus = "queued" | "processing" | "completed" | "failed"
+
+export type GenerationMessage = {
+  id: string
+  sessionId: string
+  role: MessageRole
+  modelId: string
+  originalPrompt: string | null
+  enhancedPrompt: string | null
+  usedEnhancedPrompt: boolean
+  providerInput: string | null
+  preferences: unknown
+  referenceImageUrls: string[]
+  referenceTemplateIds: string[]
+  requiredAspectRatio: string | null
+  requiredResolution: string | null
+  referenceId: string | null
+  imageUrl: string | null
+  mimeType: string | null
+  width: number | null
+  height: number | null
+  interactionId: string | null
+  status: MessageStatus
+  error: string | null
+  completedAt: string | null
+  metadata: unknown
+  createdAt: string
+}
+
+export type ListMessagesResponse = {
+  messages: GenerationMessage[]
+}
+
+export type GenerateRequest = {
+  sessionId?: string
+  originalPrompt: string
+  enhancedPrompt?: string | null
+  usedEnhancedPrompt?: boolean
+  preferences?: ThumbnailPreferences
+  modelId: string
+  requiredAspectRatio: string
+  requiredResolution: string
+  referenceImageUrls?: string[]
+  referenceTemplateIds?: string[]
+}
+
+export type GenerateResponse = {
+  session: {
+    id: string
+    latestInteractionId: string | null
+    latestMessageId: string | null
+    latestAssistantMessageId: string | null
+  }
+  userMessage: GenerationMessage
+  assistantMessage: GenerationMessage
+  job: {
+    id: string
+    status: string
+    coinCost: number
+    billing: string
+  }
+  providerInput: string
+  isFirstTurn: boolean
+}
+
+export type GenerationJobStatus =
+  | "created"
+  | "reserved"
+  | "processing"
+  | "captured"
+  | "released"
+  | "failed"
+
+export type GenerationJob = {
+  id: string
+  sessionId: string | null
+  messageId: string | null
+  kind: "generation" | "prompt_enhance"
+  status: GenerationJobStatus
+  coinCost: number
+  error: string | null
+  createdAt: string
+  completedAt: string | null
+}
+
+export type GetJobResponse = {
+  job: GenerationJob
+  message: GenerationMessage | null
 }
 
 /** Snapshot of everything needed for generate / later preference steps. */

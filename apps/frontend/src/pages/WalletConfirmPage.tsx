@@ -149,13 +149,13 @@ export function WalletConfirmPage() {
       {state.kind !== "loading" ? (
         <div className="mt-8 flex w-full max-w-sm flex-col gap-2 sm:flex-row sm:justify-center">
           <Button
-            onClick={() => navigate("/dashboard/wallet", { replace: true })}
+            onClick={() => navigate("/dashboard/profile", { replace: true })}
           >
-            Back to wallet
+            Back to profile
           </Button>
           {state.kind === "success" ? (
             <Button variant="outline" asChild>
-              <Link to="/dashboard/transactions">View transactions</Link>
+              <Link to="/dashboard/profile">View history</Link>
             </Button>
           ) : null}
         </div>

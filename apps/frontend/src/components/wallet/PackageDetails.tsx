@@ -1,28 +1,20 @@
-import { Loader2, ShieldCheck, Zap } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
-import { formatPackagePrice } from "@/lib/wallet-format";
-import type { CoinPackage } from "@/types/wallet";
+import { Loader2, ShieldCheck, Zap } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
+import { formatPackagePrice } from "@/lib/wallet-format"
+import type { CoinPackage } from "@/types/wallet"
 
 type PackageDetailsProps = {
-  selected: CoinPackage | null;
-  isBestValue: boolean;
-  isLoading: boolean;
-  isCheckingOut: boolean;
-  onCheckout: () => void;
-  className?: string;
-};
+  selected: CoinPackage | null
+  isBestValue: boolean
+  isLoading: boolean
+  isCheckingOut: boolean
+  onCheckout: () => void
+  className?: string
+}
 
 export function PackageDetails({
   selected,
@@ -34,34 +26,30 @@ export function PackageDetails({
 }: PackageDetailsProps) {
   if (isLoading) {
     return (
-      <Card className={cn("rounded-2xl ring-border/60", className)}>
-        <CardHeader>
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="mt-2 h-7 w-40" />
-          <Skeleton className="mt-1 h-4 w-48" />
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Skeleton className="h-16 w-full rounded-xl" />
-          <Skeleton className="h-10 w-full" />
-        </CardContent>
-      </Card>
-    );
+      <div className={cn("space-y-4", className)}>
+        <div className="space-y-2">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-5 w-28" />
+          <Skeleton className="h-3 w-40" />
+        </div>
+        <Skeleton className="h-16 w-full rounded-lg" />
+        <Skeleton className="h-9 w-full" />
+      </div>
+    )
   }
 
   if (!selected) {
     return (
-      <Card className={cn("rounded-2xl ring-border/60", className)}>
-        <CardHeader>
-          <CardTitle>Select a package</CardTitle>
-          <CardDescription>
-            Choose a coin pack on the left to review pricing and checkout.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
+      <div className={cn("space-y-1", className)}>
+        <p className="text-sm font-medium text-foreground">Select a package</p>
+        <p className="text-xs text-muted-foreground">
+          Choose a coin pack to review pricing and checkout.
+        </p>
+      </div>
+    )
   }
 
-  const price = formatPackagePrice(selected.priceCents, selected.currency);
+  const price = formatPackagePrice(selected.priceCents, selected.currency)
   const perCoin =
     selected.coins > 0
       ? new Intl.NumberFormat(undefined, {
@@ -70,87 +58,91 @@ export function PackageDetails({
           minimumFractionDigits: 2,
           maximumFractionDigits: 4,
         }).format(selected.priceCents / 100 / selected.coins)
-      : null;
+      : null
 
   return (
-    <Card className={cn("rounded-2xl ring-border/60", className)}>
-      <CardHeader className="shrink-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <CardDescription className="text-xs font-medium tracking-wide uppercase">
-            Selected plan
-          </CardDescription>
+    <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto">
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+              Selected plan
+            </p>
+            {isBestValue ? (
+              <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
+                Best value
+              </Badge>
+            ) : null}
+          </div>
+          <h3 className="text-base font-semibold tracking-tight text-foreground">
+            {selected.name}
+          </h3>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Instant credit after payment. Coins never expire.
+          </p>
         </div>
-        <CardTitle className="text-2xl tracking-tight flex items-center gap-2">
-          {selected.name}
-          {isBestValue ? <Badge className="h-5">Best value</Badge> : null}
-        </CardTitle>
-        <CardDescription>
-          Instant credit after payment. Coins never expire.
-        </CardDescription>
-      </CardHeader>
 
-      <CardContent className="min-h-0 flex-1 space-y-5 overflow-y-auto">
-        <div className="rounded-xl bg-muted/60 px-4 py-4">
-          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        <div>
+          <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
             You get
           </p>
-          <p className="mt-1 text-3xl font-medium tracking-tight tabular-nums text-foreground">
+          <p className="mt-1 text-3xl font-semibold tracking-tight tabular-nums text-foreground">
             {selected.coins.toLocaleString()}
-            <span className="ml-2 text-base font-normal text-muted-foreground">
+            <span className="ml-1.5 text-sm font-normal text-muted-foreground">
               coins
             </span>
           </p>
         </div>
 
-        <div className="space-y-3 text-sm">
-          <div className="flex items-center justify-between gap-4">
+        <div className="space-y-2 text-xs">
+          <div className="flex items-center justify-between gap-3">
             <span className="text-muted-foreground">Price</span>
             <span className="font-medium tabular-nums text-foreground">
               {price}
             </span>
           </div>
           {perCoin ? (
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-3">
               <span className="text-muted-foreground">Per coin</span>
-              <span className="tabular-nums text-foreground">{perCoin}</span>
+              <span className="tabular-nums text-muted-foreground">{perCoin}</span>
             </div>
           ) : null}
         </div>
 
         <Separator />
 
-        <ul className="space-y-2.5 text-sm text-muted-foreground">
-          <li className="flex items-start gap-2.5">
-            <Zap className="mt-0.5 size-4 shrink-0 text-primary" />
+        <ul className="space-y-2 text-[11px] leading-relaxed text-muted-foreground">
+          <li className="flex items-start gap-2">
+            <Zap className="mt-0.5 size-3.5 shrink-0 text-primary" />
             Generate and enhance thumbnails right away
           </li>
-          <li className="flex items-start gap-2.5">
-            <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
+          <li className="flex items-start gap-2">
+            <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-primary" />
             Secure checkout powered by Stripe
           </li>
         </ul>
-      </CardContent>
+      </div>
 
-      <CardFooter className="mt-auto shrink-0 flex-col items-stretch gap-3 border-t-0 bg-transparent">
+      <div className="mt-auto shrink-0 space-y-2 border-t border-border/60 pt-4">
         <Button
-          size="lg"
-          className="h-11 w-full text-sm"
+          size="sm"
+          className="h-9 w-full text-xs"
           disabled={isCheckingOut}
           onClick={onCheckout}
         >
           {isCheckingOut ? (
             <>
-              <Loader2 className="size-4 animate-spin" />
+              <Loader2 className="size-3.5 animate-spin" />
               Redirecting…
             </>
           ) : (
             <>Get now — {price}</>
           )}
         </Button>
-        <p className="text-center text-xs text-muted-foreground">
+        <p className="text-center text-[10px] leading-relaxed text-muted-foreground">
           You&apos;ll be redirected to Stripe to complete payment.
         </p>
-      </CardFooter>
-    </Card>
-  );
+      </div>
+    </div>
+  )
 }

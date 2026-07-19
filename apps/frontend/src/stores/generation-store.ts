@@ -38,6 +38,15 @@ type GenerationState = {
   patchPreferences: (patch: Partial<ThumbnailPreferences>) => void
   setStep: (step: GenerationStep) => void
   setSessionId: (sessionId: string | null) => void
+  clearReferences: () => void
+  hydrateComposer: (input: {
+    modelId?: string | null
+    aspectRatio?: string | null
+    resolution?: string | null
+    preferences?: ThumbnailPreferences
+    clearPrompt?: boolean
+    clearReferences?: boolean
+  }) => void
   loadModels: () => Promise<void>
   addReferenceFiles: (files: FileList | File[]) => Promise<void>
   removeReference: (id: string) => void
@@ -48,10 +57,17 @@ function firstOption(options: string[]) {
   return options[0] ?? ""
 }
 
+/** Prefer 1K when available — 512 is valid but a weak default for thumbnails. */
+function preferredResolution(options: string[], preferred = "") {
+  if (preferred && options.includes(preferred)) return preferred
+  if (options.includes("1K")) return "1K"
+  return firstOption(options)
+}
+
 function applyModelDefaults(
   model: GenerationModel | null,
   preferredAspect = "",
-  preferredResolution = "",
+  preferredResolutionValue = "",
 ) {
   if (!model) {
     return { aspectRatio: "", resolution: "" }
@@ -61,9 +77,10 @@ function applyModelDefaults(
     ? preferredAspect
     : firstOption(model.supportedAspectRatios)
 
-  const resolution = model.supportedResolutions.includes(preferredResolution)
-    ? preferredResolution
-    : firstOption(model.supportedResolutions)
+  const resolution = preferredResolution(
+    model.supportedResolutions,
+    preferredResolutionValue,
+  )
 
   return { aspectRatio, resolution }
 }
@@ -98,6 +115,7 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
     set({
       ...initialContext,
       mode,
+      step: "prompt",
       models: get().models,
       isLoadingModels: get().isLoadingModels,
       modelsError: get().modelsError,
@@ -169,6 +187,43 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
 
   setStep: (step) => set({ step }),
   setSessionId: (sessionId) => set({ sessionId }),
+
+  clearReferences: () => {
+    const { references } = get()
+    for (const ref of references) revokePreview(ref)
+    set({ references: [] })
+  },
+
+  hydrateComposer: (input) => {
+    const { models } = get()
+    const preferredModelId = input.modelId ?? get().modelId
+    const selected =
+      models.find((model) => model.id === preferredModelId) ??
+      models[0] ??
+      null
+
+    const defaults = applyModelDefaults(
+      selected,
+      input.aspectRatio ?? get().aspectRatio,
+      input.resolution ?? get().resolution,
+    )
+
+    if (input.clearReferences) {
+      const { references } = get()
+      for (const ref of references) revokePreview(ref)
+    }
+
+    set({
+      ...(input.clearPrompt ? { prompt: "" } : {}),
+      ...(input.clearReferences ? { references: [] } : {}),
+      ...(input.preferences !== undefined
+        ? { preferences: input.preferences }
+        : {}),
+      modelId: selected?.id ?? preferredModelId ?? null,
+      aspectRatio: defaults.aspectRatio || (input.aspectRatio ?? ""),
+      resolution: defaults.resolution || (input.resolution ?? ""),
+    })
+  },
 
   loadModels: async () => {
     set({ isLoadingModels: true, modelsError: null })

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { ChevronDown, Coins, History, LogOut, Wallet } from "lucide-react"
+import { ChevronDown, Coins, LogOut, MessageSquarePlus, UserRound } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,6 +49,7 @@ export function SiteHeader() {
   const isWalletLoading = useWalletStore((state) => state.isLoading)
   const refreshWallet = useWalletStore((state) => state.refresh)
   const resetWallet = useWalletStore((state) => state.reset)
+  const openBuyDrawer = useWalletStore((state) => state.openBuyDrawer)
 
   const [signOutOpen, setSignOutOpen] = useState(false)
 
@@ -83,9 +84,9 @@ export function SiteHeader() {
             <>
               <button
                 type="button"
-                onClick={() => navigate("/dashboard/wallet")}
+                onClick={() => openBuyDrawer()}
                 className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-card/90 px-2.5 py-1 text-sm font-medium text-foreground shadow-xs transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-                aria-label={`${balanceCoins ?? 0} coins — open wallet`}
+                aria-label={`${balanceCoins ?? 0} coins — buy coins`}
               >
                 <Coins className="size-3.5 text-primary" strokeWidth={2} />
                 {isWalletLoading && balanceCoins === null ? (
@@ -125,17 +126,24 @@ export function SiteHeader() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="gap-1.5 py-1.5 text-xs"
-                    onSelect={() => navigate("/dashboard/wallet")}
+                    onSelect={() => navigate("/dashboard/new")}
                   >
-                    <Wallet className="size-3.5" />
-                    Wallet & billing
+                    <MessageSquarePlus className="size-3.5" />
+                    New chat
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="gap-1.5 py-1.5 text-xs"
-                    onSelect={() => navigate("/dashboard/transactions")}
+                    onSelect={() => navigate("/dashboard/profile")}
                   >
-                    <History className="size-3.5" />
-                    Transactions
+                    <UserRound className="size-3.5" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="gap-1.5 py-1.5 text-xs"
+                    onSelect={() => openBuyDrawer()}
+                  >
+                    <Coins className="size-3.5" />
+                    Buy coins
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem

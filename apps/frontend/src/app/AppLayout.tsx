@@ -1,6 +1,7 @@
 import { useEffect } from "react"
 import { Outlet } from "react-router-dom"
 import { AuthDrawer } from "@/components/auth/AuthDrawer"
+import { BuyCoinsDrawer } from "@/components/wallet/BuyCoinsDrawer"
 import { Toaster } from "@/components/ui/sonner"
 import { useAuthStore } from "@/stores/auth-store"
 
@@ -13,6 +14,7 @@ export function AppLayout() {
     <div className="min-h-svh">
       <Outlet />
       <AuthDrawer />
+      <BuyCoinsDrawer />
       <Toaster position="top-center" richColors closeButton />
     </div>
   )

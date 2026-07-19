@@ -19,7 +19,7 @@ export function HomePage() {
         return
       }
       startFlow(mode)
-      navigate(`/generate?mode=${mode}`)
+      navigate(`/dashboard/new?mode=${mode}`)
     },
     [isAuthenticated, navigate, openAuthDrawer, startFlow],
   )

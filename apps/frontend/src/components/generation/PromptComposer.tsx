@@ -1,13 +1,6 @@
 import { useEffect, useId, useRef } from "react"
-import {
-  ArrowUp,
-  Check,
-  ChevronDown,
-  ImagePlus,
-  Loader2,
-  Plus,
-  X,
-} from "lucide-react"
+import { ArrowUp, ImagePlus, Loader2, Plus, X } from "lucide-react"
+import { ComposerOptionSelect } from "@/components/generation/ComposerOptionSelect"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -21,104 +14,6 @@ import { useGenerationStore } from "@/stores/generation-store"
 type PromptComposerProps = {
   onContinue: () => void
   className?: string
-}
-
-type OptionSelectProps = {
-  label: string
-  value: string
-  disabled?: boolean
-  emptyLabel?: string
-  options: Array<{ value: string; label: string; description?: string }>
-  onChange: (value: string) => void
-  className?: string
-  contentClassName?: string
-}
-
-function OptionSelect({
-  label,
-  value,
-  disabled,
-  emptyLabel = "Select",
-  options,
-  onChange,
-  className,
-  contentClassName,
-}: OptionSelectProps) {
-  const selected = options.find((option) => option.value === value)
-  const triggerText = selected?.label ?? emptyLabel
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          disabled={disabled || options.length === 0}
-          aria-label={label}
-          className={cn(
-            "inline-flex h-8 max-w-[9.5rem] items-center gap-1.5 rounded-full",
-            "border border-border/70 bg-muted/60 px-2.5 text-xs font-medium text-foreground",
-            "outline-none transition-colors hover:bg-muted",
-            "focus-visible:ring-2 focus-visible:ring-ring/40",
-            "disabled:pointer-events-none disabled:opacity-50",
-            className,
-          )}
-        >
-          <span className="truncate">{triggerText}</span>
-          <ChevronDown
-            className="size-3.5 shrink-0 text-muted-foreground"
-            strokeWidth={2}
-          />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        side="top"
-        sideOffset={10}
-        className={cn("w-52", contentClassName)}
-      >
-        {options.map((option) => {
-          const isSelected = option.value === value
-          return (
-            <DropdownMenuItem
-              key={option.value}
-              className={cn(
-                "gap-2",
-                option.description ? "items-start py-2.5" : "justify-between",
-              )}
-              onSelect={() => onChange(option.value)}
-            >
-              <div className="min-w-0 flex-1 space-y-0.5">
-                <p className="truncate text-sm font-medium text-foreground">
-                  {option.label}
-                </p>
-                {option.description ? (
-                  <p className="text-[11px] leading-snug text-muted-foreground">
-                    {option.description}
-                  </p>
-                ) : null}
-              </div>
-              {isSelected ? (
-                <Check
-                  className={cn(
-                    "size-3.5 shrink-0 text-primary",
-                    option.description && "mt-0.5",
-                  )}
-                  strokeWidth={2.5}
-                />
-              ) : (
-                <span
-                  className={cn(
-                    "size-3.5 shrink-0",
-                    option.description && "mt-0.5",
-                  )}
-                />
-              )}
-            </DropdownMenuItem>
-          )
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
 }
 
 export function PromptComposer({ onContinue, className }: PromptComposerProps) {
@@ -143,8 +38,14 @@ export function PromptComposer({ onContinue, className }: PromptComposerProps) {
   )
   const removeReference = useGenerationStore((state) => state.removeReference)
 
-  const selectedModel =
-    models.find((model) => model.id === modelId) ?? models[0] ?? null
+  const selectedModel = models.find((model) => model.id === modelId) ?? null
+
+  useEffect(() => {
+    if (models.length === 0 || isLoadingModels) return
+    if (modelId && models.some((model) => model.id === modelId)) return
+    const fallback = models[0]
+    if (fallback) setModelId(fallback.id)
+  }, [isLoadingModels, modelId, models, setModelId])
 
   useEffect(() => {
     const el = textareaRef.current
@@ -163,6 +64,8 @@ export function PromptComposer({ onContinue, className }: PromptComposerProps) {
     Boolean(selectedModel) &&
     Boolean(aspectRatio) &&
     Boolean(resolution) &&
+    Boolean(selectedModel?.supportedAspectRatios.includes(aspectRatio)) &&
+    Boolean(selectedModel?.supportedResolutions.includes(resolution)) &&
     !isUploading &&
     (mode !== "image" || hasReadyReference)
 
@@ -308,7 +211,7 @@ export function PromptComposer({ onContinue, className }: PromptComposerProps) {
           </div>
 
           <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
-            <OptionSelect
+            <ComposerOptionSelect
               label="Model"
               value={selectedModel?.id ?? ""}
               disabled={isLoadingModels}
@@ -318,7 +221,7 @@ export function PromptComposer({ onContinue, className }: PromptComposerProps) {
               className="max-w-[11rem]"
               contentClassName="w-72"
             />
-            <OptionSelect
+            <ComposerOptionSelect
               label="Aspect ratio"
               value={aspectRatio}
               emptyLabel="Ratio"
@@ -326,7 +229,7 @@ export function PromptComposer({ onContinue, className }: PromptComposerProps) {
               onChange={setAspectRatio}
               className="max-w-[6.5rem]"
             />
-            <OptionSelect
+            <ComposerOptionSelect
               label="Resolution"
               value={resolution}
               emptyLabel="Resolution"

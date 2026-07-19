@@ -6,6 +6,10 @@ type WalletState = {
   reservedCoins: number | null
   isLoading: boolean
   error: string | null
+  buyDrawerOpen: boolean
+  openBuyDrawer: () => void
+  closeBuyDrawer: () => void
+  setBuyDrawerOpen: (open: boolean) => void
   refresh: () => Promise<void>
   reset: () => void
 }
@@ -15,6 +19,11 @@ export const useWalletStore = create<WalletState>((set) => ({
   reservedCoins: null,
   isLoading: false,
   error: null,
+  buyDrawerOpen: false,
+
+  openBuyDrawer: () => set({ buyDrawerOpen: true }),
+  closeBuyDrawer: () => set({ buyDrawerOpen: false }),
+  setBuyDrawerOpen: (open) => set({ buyDrawerOpen: open }),
 
   refresh: async () => {
     set({ isLoading: true, error: null })
@@ -40,5 +49,6 @@ export const useWalletStore = create<WalletState>((set) => ({
       reservedCoins: null,
       isLoading: false,
       error: null,
+      buyDrawerOpen: false,
     }),
 }))

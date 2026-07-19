@@ -8,6 +8,12 @@ import type {
 } from "@/types/auth"
 import type { CategoriesResponse } from "@/types/gallery"
 import type {
+  CreateSessionResponse,
+  GenerateRequest,
+  GenerateResponse,
+  GetJobResponse,
+  ListMessagesResponse,
+  ListSessionsResponse,
   ModelsResponse,
   ReferenceUploadResponse,
 } from "@/types/generation"
@@ -153,6 +159,35 @@ export const api = {
   },
   models: {
     list: () => apiClient.get<ModelsResponse>("/api/models"),
+  },
+  sessions: {
+    create: (body?: { title?: string | null; category?: string | null }) =>
+      apiClient.post<CreateSessionResponse>("/api/sessions", body ?? {}),
+    list: (params?: {
+      status?: "active" | "archived"
+      pinned?: boolean
+      limit?: number
+      offset?: number
+    }) =>
+      apiClient.get<ListSessionsResponse>("/api/sessions", { params }),
+    messages: (sessionId: string) =>
+      apiClient.get<ListMessagesResponse>(
+        `/api/sessions/${encodeURIComponent(sessionId)}/messages`,
+      ),
+  },
+  generate: {
+    start: (body: GenerateRequest, idempotencyKey?: string) =>
+      apiClient.post<GenerateResponse>("/api/generate", body, {
+        headers: idempotencyKey
+          ? { "Idempotency-Key": idempotencyKey }
+          : undefined,
+      }),
+  },
+  jobs: {
+    get: (jobId: string) =>
+      apiClient.get<GetJobResponse>(
+        `/api/jobs/${encodeURIComponent(jobId)}`,
+      ),
   },
   uploads: {
     reference: (file: File, sessionId?: string) => {
