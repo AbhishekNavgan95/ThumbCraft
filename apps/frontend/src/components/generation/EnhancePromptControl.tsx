@@ -1,19 +1,37 @@
 import { useState } from "react"
-import { Check, Loader2, Sparkles, X } from "lucide-react"
+import { Check, Sparkles, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Skeleton } from "@/components/ui/skeleton"
 import { api, getApiErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
+import { useWalletStore } from "@/stores/wallet-store"
 
 type EnhancePromptControlProps = {
   prompt: string
   disabled?: boolean
   onAccept: (enhancedPrompt: string) => void
   className?: string
+}
+
+function EnhancePromptSkeleton() {
+  return (
+    <div
+      className="space-y-2 py-1"
+      role="status"
+      aria-label="Enhancing prompt"
+    >
+      <Skeleton className="h-3 w-full" />
+      <Skeleton className="h-3 w-[92%]" />
+      <Skeleton className="h-3 w-[78%]" />
+      <Skeleton className="h-3 w-[85%]" />
+      <Skeleton className="h-3 w-2/3" />
+    </div>
+  )
 }
 
 export function EnhancePromptControl({
@@ -50,6 +68,7 @@ export function EnhancePromptControl({
         crypto.randomUUID(),
       )
       setEnhanced(data.enhancedPrompt)
+      void useWalletStore.getState().refresh()
     } catch (err) {
       setError(getApiErrorMessage(err, "Failed to enhance prompt"))
     } finally {
@@ -82,11 +101,10 @@ export function EnhancePromptControl({
           disabled={!hasPrompt || disabled}
           aria-label="Enhance prompt"
         >
-          {isEnhancing ? (
-            <Loader2 className="size-3.5 animate-spin" strokeWidth={2} />
-          ) : (
-            <Sparkles className="size-3.5" strokeWidth={2} />
-          )}
+          <Sparkles
+            className={cn("size-3.5", isEnhancing && "animate-pulse")}
+            strokeWidth={2}
+          />
           Enhance
         </Button>
       </DropdownMenuTrigger>
@@ -103,10 +121,7 @@ export function EnhancePromptControl({
         </p>
 
         {isEnhancing ? (
-          <div className="flex items-center gap-2 py-4 text-xs text-muted-foreground">
-            <Loader2 className="size-3.5 animate-spin" />
-            Enhancing…
-          </div>
+          <EnhancePromptSkeleton />
         ) : error ? (
           <p className="py-2 text-xs text-destructive">{error}</p>
         ) : enhanced ? (

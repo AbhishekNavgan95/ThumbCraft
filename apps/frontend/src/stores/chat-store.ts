@@ -1,6 +1,7 @@
 import { create } from "zustand"
 import { api, getApiErrorMessage } from "@/lib/api-client"
 import { useGenerationStore } from "@/stores/generation-store"
+import { useWalletStore } from "@/stores/wallet-store"
 import type {
   GenerationMessage,
   GenerationSession,
@@ -236,6 +237,7 @@ async function pollJobUntilDone(jobId: string, sessionId: string) {
         if (token !== pollToken) return
         useChatStore.setState({ activeJobId: null })
         void useChatStore.getState().loadSessions()
+        void useWalletStore.getState().refresh()
         return
       }
     } catch (error) {
@@ -286,6 +288,7 @@ async function pollSessionMessagesUntilDone(
       if (isMessageTerminal(assistant?.status)) {
         useChatStore.setState({ activeJobId: null })
         void useChatStore.getState().loadSessions()
+        void useWalletStore.getState().refresh()
         return
       }
     } catch (error) {
@@ -640,6 +643,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       })
 
       void get().loadSessions()
+      void useWalletStore.getState().refresh()
       void pollJobUntilDone(jobId, data.session.id || sessionId)
       return data.session.id || sessionId
     } catch (error) {
@@ -741,6 +745,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       })
 
       void get().loadSessions()
+      void useWalletStore.getState().refresh()
       void pollJobUntilDone(data.job.id, sessionId)
       return true
     } catch (error) {

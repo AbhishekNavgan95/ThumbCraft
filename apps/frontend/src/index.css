@@ -285,4 +285,59 @@
     opacity: 0.85;
     filter: blur(48px);
   }
+
+  .skeleton-wave,
+  .skeleton-wave::after {
+    animation: none;
+  }
 }
+
+.skeleton-wave {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background-color: color-mix(
+    in oklch,
+    var(--secondary-foreground) 8%,
+    transparent
+  );
+  animation: skeleton-pulse 2.4s ease-in-out infinite;
+}
+
+.skeleton-wave::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    transparent 35%,
+    color-mix(in oklch, var(--foreground) 4%, transparent) 42%,
+    color-mix(in oklch, var(--foreground) 12%, transparent) 50%,
+    color-mix(in oklch, var(--foreground) 4%, transparent) 58%,
+    transparent 65%,
+    transparent 100%
+  );
+  animation: skeleton-wave 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes skeleton-wave {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+

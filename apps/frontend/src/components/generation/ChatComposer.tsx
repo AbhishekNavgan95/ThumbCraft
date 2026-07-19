@@ -124,11 +124,11 @@ export function ChatComposer({ className }: ChatComposerProps) {
   return (
     <div
       className={cn(
-        "shrink-0 border-t border-border/60 bg-background/95 px-4 py-3 backdrop-blur-sm sm:px-6 lg:px-8",
+        "shrink-0 bg-background/5 px-4 py-3 backdrop-blur-sm sm:px-6 lg:px-8",
         className,
       )}
     >
-      <div className="mx-auto w-full max-w-3xl">
+      <div className="mx-auto w-full max-w-4xl">
         <div
           className={cn(
             "rounded-[1.75rem] border border-border/80 bg-card shadow-md",

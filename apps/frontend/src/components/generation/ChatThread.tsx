@@ -115,24 +115,13 @@ function GenerationLoader() {
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-border/70 bg-muted/40",
+        "relative overflow-hidden rounded-2xl border border-border/70",
         THUMB_FRAME,
       )}
+      role="status"
+      aria-label="Generating thumbnail"
     >
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-        <div className="relative">
-          <div className="size-14 animate-pulse rounded-2xl bg-primary/15" />
-          <Loader2 className="absolute inset-0 m-auto size-6 animate-spin text-primary" />
-        </div>
-        <div className="space-y-1 text-center">
-          <p className="text-sm font-medium text-foreground">
-            Generating thumbnail…
-          </p>
-          <p className="text-xs text-muted-foreground">
-            This usually takes a few seconds
-          </p>
-        </div>
-      </div>
+      <Skeleton className="absolute inset-0 size-full rounded-none" />
     </div>
   )
 }
