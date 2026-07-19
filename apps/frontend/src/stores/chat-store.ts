@@ -22,6 +22,7 @@ type ChatState = {
   generationError: string | null
 
   loadSessions: () => Promise<void>
+  renameSession: (sessionId: string, title: string) => Promise<boolean>
   selectSession: (sessionId: string) => Promise<void>
   startGenerationFromContext: () => Promise<string | null>
   continueGeneration: (prompt: string) => Promise<boolean>
@@ -326,6 +327,45 @@ export const useChatStore = create<ChatState>((set, get) => ({
         isLoadingSessions: false,
         sessionsError: getApiErrorMessage(error, "Failed to load sessions"),
       })
+    }
+  },
+
+  renameSession: async (sessionId, title) => {
+    const trimmed = title.trim()
+    const nextTitle = trimmed.length > 0 ? trimmed.slice(0, 120) : null
+    const previous = get().sessions.find((session) => session.id === sessionId)
+    if (!previous) return false
+
+    // Optimistic update so the sidebar feels instant.
+    set({
+      sessions: get().sessions.map((session) =>
+        session.id === sessionId
+          ? {
+              ...session,
+              title: nextTitle,
+              updatedAt: new Date().toISOString(),
+            }
+          : session,
+      ),
+    })
+
+    try {
+      const { data } = await api.sessions.update(sessionId, {
+        title: nextTitle,
+      })
+      set({
+        sessions: get().sessions.map((session) =>
+          session.id === sessionId ? data.session : session,
+        ),
+      })
+      return true
+    } catch {
+      set({
+        sessions: get().sessions.map((session) =>
+          session.id === sessionId ? previous : session,
+        ),
+      })
+      return false
     }
   },
 

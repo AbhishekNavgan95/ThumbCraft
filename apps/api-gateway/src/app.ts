@@ -20,7 +20,11 @@ import "./types.js";
 export async function createApp(config: GatewayConfig, logger: Logger) {
   const app = Fastify({ logger: false, bodyLimit: 2 * 1024 * 1024 });
 
-  await app.register(cors, { origin: true });
+  await app.register(cors, {
+    origin: true,
+    methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Idempotency-Key"],
+  });
   await app.register(multipart, {
     limits: {
       fileSize: 10 * 1024 * 1024,

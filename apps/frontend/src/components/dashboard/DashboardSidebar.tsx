@@ -1,14 +1,14 @@
-import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import {
   ChevronUp,
   Coins,
   LogOut,
   MessageSquarePlus,
-  PanelLeft,
-  Pin,
+  Pencil,
   UserRound,
-} from "lucide-react";
+} from "lucide-react"
+import { toast } from "sonner"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,8 +18,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,109 +27,247 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/stores/auth-store";
-import { useChatStore } from "@/stores/chat-store";
-import { useGenerationStore } from "@/stores/generation-store";
-import { useWalletStore } from "@/stores/wallet-store";
-import type { GenerationSession } from "@/types/generation";
+} from "@/components/ui/dropdown-menu"
+import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
+import { useAuthStore } from "@/stores/auth-store"
+import { useChatStore } from "@/stores/chat-store"
+import { useGenerationStore } from "@/stores/generation-store"
+import { useWalletStore } from "@/stores/wallet-store"
+import type { GenerationSession } from "@/types/generation"
 
 function formatCoins(value: number) {
   return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(
     value,
-  );
+  )
 }
 
 function formatSessionTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ""
   return new Intl.DateTimeFormat(undefined, {
     month: "short",
     day: "numeric",
-  }).format(date);
+  }).format(date)
 }
 
 function sessionLabel(session: GenerationSession) {
-  const title = session.title?.trim();
-  if (title && title !== "New session") return title;
-  return "Untitled chat";
+  const title = session.title?.trim()
+  if (title && title !== "New session") return title
+  return "Untitled chat"
 }
 
 function initials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
-  return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return "?"
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase()
+  return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase()
+}
+
+function SessionRow({
+  session,
+  isActive,
+  onSelect,
+}: {
+  session: GenerationSession
+  isActive: boolean
+  onSelect: () => void
+}) {
+  const renameSession = useChatStore((state) => state.renameSession)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [draft, setDraft] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
+
+  useEffect(() => {
+    if (!isEditing) return
+    const input = inputRef.current
+    if (!input) return
+    input.focus()
+    input.select()
+  }, [isEditing])
+
+  const startEditing = () => {
+    setDraft(sessionLabel(session))
+    setIsEditing(true)
+  }
+
+  const cancelEditing = () => {
+    setIsEditing(false)
+    setDraft("")
+  }
+
+  const commitEditing = async () => {
+    if (isSaving) return
+    const next = draft.trim()
+    const current = sessionLabel(session)
+    if (!next || next === current) {
+      cancelEditing()
+      return
+    }
+
+    setIsSaving(true)
+    const ok = await renameSession(session.id, next)
+    setIsSaving(false)
+    if (!ok) {
+      toast.error("Failed to rename session")
+      inputRef.current?.focus()
+      return
+    }
+    setIsEditing(false)
+  }
+
+  if (isEditing) {
+    return (
+      <li>
+        <div
+          className={cn(
+            "flex items-center gap-1 rounded-xl px-2 py-1.5",
+            isActive ? "bg-primary/10" : "bg-muted/50",
+          )}
+        >
+          <input
+            ref={inputRef}
+            value={draft}
+            disabled={isSaving}
+            maxLength={120}
+            aria-label="Rename session"
+            onChange={(event) => setDraft(event.target.value)}
+            onBlur={() => {
+              void commitEditing()
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault()
+                void commitEditing()
+              }
+              if (event.key === "Escape") {
+                event.preventDefault()
+                cancelEditing()
+              }
+            }}
+            className={cn(
+              "min-w-0 flex-1 rounded-md bg-transparent px-1 py-0.5 text-sm font-medium text-foreground",
+              "outline-none ring-1 ring-primary/40 focus:ring-primary/60",
+              "disabled:opacity-60",
+            )}
+          />
+        </div>
+      </li>
+    )
+  }
+
+  return (
+    <li>
+      <div
+        className={cn(
+          "group relative flex w-full items-center rounded-xl transition-colors",
+          isActive
+            ? "bg-primary/10 text-foreground"
+            : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+        )}
+      >
+        <button
+          type="button"
+          title={sessionLabel(session)}
+          onClick={onSelect}
+          className="min-w-0 flex-1 px-2.5 py-2 text-left"
+        >
+          <span className="block truncate text-sm font-medium text-foreground">
+            {sessionLabel(session)}
+          </span>
+          <span className="block truncate text-[11px] text-muted-foreground">
+            {session.messageCount} msg · {formatSessionTime(session.updatedAt)}
+          </span>
+        </button>
+        <button
+          type="button"
+          aria-label={`Rename ${sessionLabel(session)}`}
+          onClick={(event) => {
+            event.stopPropagation()
+            startEditing()
+          }}
+          className={cn(
+            "mr-1.5 inline-flex size-6 shrink-0 items-center justify-center rounded-md",
+            "text-muted-foreground opacity-0 transition-opacity",
+            "hover:bg-background/80 hover:text-foreground",
+            "group-hover:opacity-100 focus-visible:opacity-100",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+          )}
+        >
+          <Pencil className="size-3" strokeWidth={2} />
+        </button>
+      </div>
+    </li>
+  )
 }
 
 type DashboardSidebarProps = {
-  className?: string;
-  collapsed?: boolean;
-  onNavigate?: () => void;
-};
+  className?: string
+  collapsed?: boolean
+  onNavigate?: () => void
+}
 
 export function DashboardSidebar({
   className,
   collapsed = false,
   onNavigate,
 }: DashboardSidebarProps) {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
+  const navigate = useNavigate()
+  const location = useLocation()
+  const user = useAuthStore((state) => state.user)
+  const logout = useAuthStore((state) => state.logout)
 
-  const balanceCoins = useWalletStore((state) => state.balanceCoins);
-  const isWalletLoading = useWalletStore((state) => state.isLoading);
-  const refreshWallet = useWalletStore((state) => state.refresh);
-  const resetWallet = useWalletStore((state) => state.reset);
-  const openBuyDrawer = useWalletStore((state) => state.openBuyDrawer);
+  const balanceCoins = useWalletStore((state) => state.balanceCoins)
+  const isWalletLoading = useWalletStore((state) => state.isLoading)
+  const refreshWallet = useWalletStore((state) => state.refresh)
+  const resetWallet = useWalletStore((state) => state.reset)
+  const openBuyDrawer = useWalletStore((state) => state.openBuyDrawer)
 
-  const sessions = useChatStore((state) => state.sessions);
-  const isLoadingSessions = useChatStore((state) => state.isLoadingSessions);
-  const sessionsError = useChatStore((state) => state.sessionsError);
-  const loadSessions = useChatStore((state) => state.loadSessions);
-  const resetChat = useChatStore((state) => state.resetChat);
+  const sessions = useChatStore((state) => state.sessions)
+  const isLoadingSessions = useChatStore((state) => state.isLoadingSessions)
+  const sessionsError = useChatStore((state) => state.sessionsError)
+  const loadSessions = useChatStore((state) => state.loadSessions)
+  const resetChat = useChatStore((state) => state.resetChat)
 
-  const startFlow = useGenerationStore((state) => state.startFlow);
-  const mode = useGenerationStore((state) => state.mode);
+  const startFlow = useGenerationStore((state) => state.startFlow)
+  const mode = useGenerationStore((state) => state.mode)
 
-  const [signOutOpen, setSignOutOpen] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false)
 
   const activeSessionIdFromPath = location.pathname.startsWith(
     "/dashboard/sessions/",
   )
     ? location.pathname.split("/dashboard/sessions/")[1]?.split("/")[0]
-    : null;
+    : null
 
-  const isNewChatRoute = location.pathname.startsWith("/dashboard/new");
-  const isProfileRoute = location.pathname.startsWith("/dashboard/profile");
+  const isNewChatRoute = location.pathname.startsWith("/dashboard/new")
+  const isProfileRoute = location.pathname.startsWith("/dashboard/profile")
 
   useEffect(() => {
-    void refreshWallet();
-    void loadSessions();
-  }, [loadSessions, refreshWallet]);
+    void refreshWallet()
+    void loadSessions()
+  }, [loadSessions, refreshWallet])
 
   const handleNewChat = () => {
-    resetChat();
-    startFlow(mode || "prompt");
-    onNavigate?.();
-    navigate(`/dashboard/new?mode=${mode || "prompt"}`);
-  };
+    resetChat()
+    startFlow(mode || "prompt")
+    onNavigate?.()
+    navigate(`/dashboard/new?mode=${mode || "prompt"}`)
+  }
 
   const handleSelectSession = (sessionId: string) => {
-    onNavigate?.();
-    navigate(`/dashboard/sessions/${sessionId}`);
-  };
+    onNavigate?.()
+    navigate(`/dashboard/sessions/${sessionId}`)
+  }
 
   const handleLogout = () => {
-    resetWallet();
-    resetChat();
-    logout();
-    setSignOutOpen(false);
-    navigate("/");
-  };
+    resetWallet()
+    resetChat()
+    logout()
+    setSignOutOpen(false)
+    navigate("/")
+  }
 
   return (
     <aside
@@ -206,10 +344,10 @@ export function DashboardSidebar({
                   No sessions yet
                 </p>
               ) : null
-            ) : (
+            ) : collapsed ? (
               <ul className="space-y-0.5">
                 {sessions.map((session) => {
-                  const isActive = session.id === activeSessionIdFromPath;
+                  const isActive = session.id === activeSessionIdFromPath
                   return (
                     <li key={session.id}>
                       <button
@@ -217,32 +355,28 @@ export function DashboardSidebar({
                         title={sessionLabel(session)}
                         onClick={() => handleSelectSession(session.id)}
                         className={cn(
-                          "flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left transition-colors",
+                          "mx-auto flex size-9 items-center justify-center rounded-xl text-[10px] font-semibold transition-colors",
                           isActive
                             ? "bg-primary/10 text-foreground"
                             : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                         )}
                       >
-                        {session.pinned ? (
-                          <Pin className="size-3.5 shrink-0 text-primary" />
-                        ) : (
-                          <PanelLeft className="size-3.5 shrink-0 opacity-50" />
-                        )}
-                        {!collapsed ? (
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm font-medium text-foreground">
-                              {sessionLabel(session)}
-                            </span>
-                            <span className="block truncate text-[11px] text-muted-foreground">
-                              {session.messageCount} msg ·{" "}
-                              {formatSessionTime(session.updatedAt)}
-                            </span>
-                          </span>
-                        ) : null}
+                        {sessionLabel(session).slice(0, 2).toUpperCase()}
                       </button>
                     </li>
-                  );
+                  )
                 })}
+              </ul>
+            ) : (
+              <ul className="space-y-0.5">
+                {sessions.map((session) => (
+                  <SessionRow
+                    key={session.id}
+                    session={session}
+                    isActive={session.id === activeSessionIdFromPath}
+                    onSelect={() => handleSelectSession(session.id)}
+                  />
+                ))}
               </ul>
             )}
           </div>
@@ -253,8 +387,8 @@ export function DashboardSidebar({
         <button
           type="button"
           onClick={() => {
-            onNavigate?.();
-            openBuyDrawer();
+            onNavigate?.()
+            openBuyDrawer()
           }}
           className={cn(
             "flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-sm transition-colors hover:bg-muted/60",
@@ -264,9 +398,9 @@ export function DashboardSidebar({
         >
           <Coins className="size-4 shrink-0 text-primary" />
           {!collapsed ? (
-            <div className="flex justify-between w-full items-center gap-2">
+            <div className="flex w-full items-center justify-between gap-2">
               <span className="font-medium tabular-nums text-foreground">
-                Curreny balance:
+                Currency balance:
               </span>
               <span className="font-medium tabular-nums text-foreground">
                 {isWalletLoading && balanceCoins === null
@@ -306,7 +440,7 @@ export function DashboardSidebar({
             <DropdownMenuContent
               side="top"
               align={collapsed ? "center" : "start"}
-              sideOffset={8}
+              sideOffset={4}
               className={
                 collapsed
                   ? "w-44"
@@ -327,8 +461,8 @@ export function DashboardSidebar({
               <DropdownMenuItem
                 className="gap-2 text-xs"
                 onSelect={() => {
-                  onNavigate?.();
-                  navigate("/dashboard/profile");
+                  onNavigate?.()
+                  navigate("/dashboard/profile")
                 }}
               >
                 <UserRound className="size-3.5" />
@@ -370,5 +504,5 @@ export function DashboardSidebar({
         </AlertDialogContent>
       </AlertDialog>
     </aside>
-  );
+  )
 }

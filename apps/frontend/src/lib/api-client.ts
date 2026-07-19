@@ -9,6 +9,8 @@ import type {
 import type { CategoriesResponse } from "@/types/gallery"
 import type {
   CreateSessionResponse,
+  EnhancePromptRequest,
+  EnhancePromptResponse,
   GenerateRequest,
   GenerateResponse,
   GetJobResponse,
@@ -170,6 +172,19 @@ export const api = {
       offset?: number
     }) =>
       apiClient.get<ListSessionsResponse>("/api/sessions", { params }),
+    update: (
+      sessionId: string,
+      body: {
+        title?: string | null
+        category?: string | null
+        pinned?: boolean
+        status?: "active" | "archived"
+      },
+    ) =>
+      apiClient.patch<CreateSessionResponse>(
+        `/api/sessions/${encodeURIComponent(sessionId)}`,
+        body,
+      ),
     messages: (sessionId: string) =>
       apiClient.get<ListMessagesResponse>(
         `/api/sessions/${encodeURIComponent(sessionId)}/messages`,
@@ -178,6 +193,14 @@ export const api = {
   generate: {
     start: (body: GenerateRequest, idempotencyKey?: string) =>
       apiClient.post<GenerateResponse>("/api/generate", body, {
+        headers: idempotencyKey
+          ? { "Idempotency-Key": idempotencyKey }
+          : undefined,
+      }),
+  },
+  enhance: {
+    prompt: (body: EnhancePromptRequest, idempotencyKey?: string) =>
+      apiClient.post<EnhancePromptResponse>("/api/enhance-prompt", body, {
         headers: idempotencyKey
           ? { "Idempotency-Key": idempotencyKey }
           : undefined,

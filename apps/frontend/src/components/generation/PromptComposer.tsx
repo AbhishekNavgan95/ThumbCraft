@@ -1,6 +1,7 @@
-import { useEffect, useId, useRef } from "react"
+import { useEffect, useId, useRef, type ClipboardEvent } from "react"
 import { ArrowUp, ImagePlus, Loader2, Plus, X } from "lucide-react"
 import { ComposerOptionSelect } from "@/components/generation/ComposerOptionSelect"
+import { EnhancePromptControl } from "@/components/generation/EnhancePromptControl"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -9,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { getClipboardImageFiles } from "@/lib/clipboard-images"
 import { useGenerationStore } from "@/stores/generation-store"
 
 type PromptComposerProps = {
@@ -68,6 +70,14 @@ export function PromptComposer({ onContinue, className }: PromptComposerProps) {
     Boolean(selectedModel?.supportedResolutions.includes(resolution)) &&
     !isUploading &&
     (mode !== "image" || hasReadyReference)
+
+  const handlePaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
+    if (references.length >= 6) return
+    const images = getClipboardImageFiles(event.clipboardData)
+    if (images.length === 0) return
+    event.preventDefault()
+    void addReferenceFiles(images)
+  }
 
   const modelOptions = models.map((model) => ({
     value: model.id,
@@ -157,6 +167,7 @@ export function PromptComposer({ onContinue, className }: PromptComposerProps) {
               if (canSubmit) onContinue()
             }
           }}
+          onPaste={handlePaste}
           placeholder={
             mode === "image"
               ? "Describe how to use your reference image…"
@@ -208,6 +219,11 @@ export function PromptComposer({ onContinue, className }: PromptComposerProps) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+
+            <EnhancePromptControl
+              prompt={prompt}
+              onAccept={setPrompt}
+            />
           </div>
 
           <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">

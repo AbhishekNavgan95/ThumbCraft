@@ -1,6 +1,7 @@
-import { useEffect, useId, useRef } from "react"
+import { useEffect, useId, useRef, type ClipboardEvent } from "react"
 import { ArrowUp, ImagePlus, Loader2, Plus, X } from "lucide-react"
 import { ComposerOptionSelect } from "@/components/generation/ComposerOptionSelect"
+import { EnhancePromptControl } from "@/components/generation/EnhancePromptControl"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -9,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { getClipboardImageFiles } from "@/lib/clipboard-images"
 import { useChatStore } from "@/stores/chat-store"
 import { useGenerationStore } from "@/stores/generation-store"
 
@@ -89,6 +91,14 @@ export function ChatComposer({ className }: ChatComposerProps) {
     if (!canSubmit) return
     const nextPrompt = prompt.trim()
     void continueGeneration(nextPrompt)
+  }
+
+  const handlePaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
+    if (controlsDisabled || references.length >= 6) return
+    const images = getClipboardImageFiles(event.clipboardData)
+    if (images.length === 0) return
+    event.preventDefault()
+    void addReferenceFiles(images)
   }
 
   const modelOptions = models.map((model) => ({
@@ -188,6 +198,7 @@ export function ChatComposer({ className }: ChatComposerProps) {
                 handleSubmit()
               }
             }}
+            onPaste={handlePaste}
             placeholder={
               isBusy
                 ? "Generating…"
@@ -240,8 +251,13 @@ export function ChatComposer({ className }: ChatComposerProps) {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
 
+              <EnhancePromptControl
+                prompt={prompt}
+                disabled={controlsDisabled}
+                onAccept={setPrompt}
+              />
+            </div>
             <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
               <ComposerOptionSelect
                 label="Model"

@@ -132,6 +132,21 @@ export type GenerateRequest = {
   referenceTemplateIds?: string[]
 }
 
+export type EnhancePromptRequest = {
+  prompt: string
+  idempotencyKey?: string
+}
+
+export type EnhancePromptResponse = {
+  jobId: string
+  originalPrompt: string
+  enhancedPrompt: string
+  coinCost: number
+  model: string
+  systemPromptKey: string
+  systemPromptVersion: string
+}
+
 export type GenerateResponse = {
   session: {
     id: string
