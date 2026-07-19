@@ -173,178 +173,116 @@
   }
 }
 
-/* Brand-palette moving mesh for hero */
-@keyframes hero-mesh-drift-a {
-  0%,
-  100% {
-    transform: translate(-12%, -6%) scale(1);
-  }
-  50% {
-    transform: translate(14%, 10%) scale(1.18);
-  }
-}
-
-@keyframes hero-mesh-drift-b {
-  0%,
-  100% {
-    transform: translate(16%, 4%) scale(1.08);
-  }
-  50% {
-    transform: translate(-18%, -12%) scale(0.92);
-  }
-}
-
-@keyframes hero-mesh-drift-c {
-  0%,
-  100% {
-    transform: translate(2%, 14%) scale(1);
-  }
-  33% {
-    transform: translate(-16%, -8%) scale(1.14);
-  }
-  66% {
-    transform: translate(12%, -14%) scale(0.96);
-  }
-}
-
-@keyframes hero-mesh-drift-d {
-  0%,
-  100% {
-    transform: translate(8%, -10%) scale(0.95);
-    opacity: 0.55;
-  }
-  50% {
-    transform: translate(-10%, 12%) scale(1.2);
-    opacity: 0.9;
-  }
-}
-
-@keyframes hero-mesh-aurora {
-  0% {
-    background-position: 0% 40%;
-  }
-  50% {
-    background-position: 100% 60%;
-  }
-  100% {
-    background-position: 0% 40%;
-  }
-}
-
-@keyframes hero-mesh-grid-shift {
-  0% {
-    background-position: 0 0;
-  }
-  100% {
-    background-position: 56px 56px;
-  }
-}
-
+/* Hero: moving accent mesh + soft gradient orbs */
 .hero-mesh {
-  background: var(--background);
-}
-
-.hero-mesh__aurora {
-  position: absolute;
-  inset: -20%;
-  background: linear-gradient(
-    120deg,
-    color-mix(in oklch, var(--primary) 22%, transparent),
-    color-mix(in oklch, var(--chart-3) 16%, transparent),
-    color-mix(in oklch, var(--chart-1) 18%, transparent),
-    color-mix(in oklch, var(--chart-2) 12%, transparent),
-    color-mix(in oklch, var(--primary) 20%, transparent)
-  );
-  background-size: 280% 280%;
-  filter: blur(40px);
-  opacity: 0.85;
-  animation: hero-mesh-aurora 14s ease-in-out infinite;
-}
-
-.hero-mesh__blob {
-  position: absolute;
-  border-radius: 9999px;
-  filter: blur(56px);
-  will-change: transform;
-  mix-blend-mode: multiply;
-}
-
-:is(.dark) .hero-mesh__blob {
-  mix-blend-mode: screen;
-}
-
-.hero-mesh__blob--a {
-  top: -18%;
-  left: 5%;
-  width: min(58vw, 30rem);
-  height: min(58vw, 30rem);
-  background: color-mix(in oklch, var(--primary) 45%, transparent);
-  animation: hero-mesh-drift-a 12s ease-in-out infinite;
-}
-
-.hero-mesh__blob--b {
-  top: 0%;
-  right: -8%;
-  width: min(52vw, 26rem);
-  height: min(52vw, 26rem);
-  background: color-mix(in oklch, var(--chart-1) 38%, transparent);
-  animation: hero-mesh-drift-b 16s ease-in-out infinite;
-}
-
-.hero-mesh__blob--c {
-  bottom: -22%;
-  left: 20%;
-  width: min(62vw, 34rem);
-  height: min(48vw, 24rem);
-  background: color-mix(in oklch, var(--chart-3) 32%, transparent);
-  animation: hero-mesh-drift-c 18s ease-in-out infinite;
-}
-
-.hero-mesh__blob--d {
-  top: 28%;
-  left: 38%;
-  width: min(40vw, 18rem);
-  height: min(40vw, 18rem);
-  background: color-mix(in oklch, var(--chart-2) 28%, transparent);
-  animation: hero-mesh-drift-d 10s ease-in-out infinite;
-}
-
-.hero-mesh__grid {
-  position: absolute;
-  inset: 0;
-  opacity: 0.4;
   background-image:
-    linear-gradient(
-      color-mix(in oklch, var(--primary) 12%, transparent) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      90deg,
-      color-mix(in oklch, var(--primary) 12%, transparent) 1px,
-      transparent 1px
-    );
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse 75% 65% at 50% 35%, black, transparent);
-  animation: hero-mesh-grid-shift 22s linear infinite;
+    linear-gradient(to right, color-mix(in oklch, var(--primary) 22%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklch, var(--primary) 22%, transparent) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 85% 95% at 50% 40%, black 25%, transparent 90%);
+  -webkit-mask-image: radial-gradient(ellipse 85% 95% at 50% 40%, black 25%, transparent 90%);
+  opacity: 1;
+  animation: hero-mesh-drift 24s linear infinite;
 }
 
-.hero-mesh__fade {
-  position: absolute;
-  inset: 0;
+/* Soft white opacity overlay — blends top, bottom + side edges into page bg */
+.hero-fade {
   background:
-    radial-gradient(
-      ellipse 70% 55% at 50% 30%,
-      transparent 20%,
-      color-mix(in oklch, var(--background) 55%, transparent) 70%,
+    linear-gradient(
+      to right,
+      var(--background) 0%,
+      color-mix(in oklch, var(--background) 70%, transparent) 12%,
+      transparent 28%,
+      transparent 72%,
+      color-mix(in oklch, var(--background) 70%, transparent) 88%,
       var(--background) 100%
     ),
-    linear-gradient(to bottom, transparent 50%, var(--background) 100%);
+    linear-gradient(
+      to bottom,
+      var(--background) 0%,
+      color-mix(in oklch, var(--background) 70%, transparent) 8%,
+      transparent 22%,
+      transparent 45%,
+      color-mix(in oklch, var(--background) 25%, transparent) 60%,
+      color-mix(in oklch, var(--background) 55%, transparent) 75%,
+      color-mix(in oklch, var(--background) 82%, transparent) 88%,
+      var(--background) 100%
+    );
+}
+
+.hero-blob {
+  will-change: transform, opacity, filter;
+  background: radial-gradient(
+    circle at 40% 40%,
+    color-mix(in oklch, var(--primary) 75%, white) 0%,
+    color-mix(in oklch, var(--primary) 55%, transparent) 35%,
+    color-mix(in oklch, var(--primary) 20%, transparent) 65%,
+    transparent 75%
+  );
+  filter: blur(48px);
+  opacity: 0.85;
+  animation:
+    hero-blob-float 18s ease-in-out infinite,
+    hero-blob-glow 6s ease-in-out infinite;
+}
+
+.hero-blob-a {
+  animation-duration: 22s, 7s;
+}
+
+.hero-blob-b {
+  animation-duration: 16s, 5.5s;
+  animation-delay: -6s, -2s;
+  animation-direction: reverse, alternate;
+}
+
+.hero-blob-c {
+  animation-duration: 20s, 8s;
+  animation-delay: -10s, -4s;
+}
+
+@keyframes hero-mesh-drift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 40px 40px;
+  }
+}
+
+@keyframes hero-blob-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(6%, 4%, 0) scale(1.08);
+  }
+  66% {
+    transform: translate3d(-5%, 8%, 0) scale(0.94);
+  }
+}
+
+@keyframes hero-blob-glow {
+  0%,
+  100% {
+    opacity: 0.7;
+    filter: blur(48px) brightness(1);
+  }
+  50% {
+    opacity: 1;
+    filter: blur(56px) brightness(1.35);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-mesh__blob,
-  .hero-mesh__aurora,
-  .hero-mesh__grid {
+  .hero-mesh,
+  .hero-blob {
     animation: none;
+  }
+
+  .hero-blob {
+    opacity: 0.85;
+    filter: blur(48px);
   }
 }

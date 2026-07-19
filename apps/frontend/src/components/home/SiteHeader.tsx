@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { ChevronDown, Coins, LogOut, Wallet } from "lucide-react"
+import { ChevronDown, Coins, History, LogOut, Wallet } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,13 +68,14 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md">
+    <header className="fixed w-full top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
-        <Link
-          to="/"
-          className="shrink-0 font-serif text-lg tracking-tight text-foreground"
-        >
-          Thumbcraft
+        <Link to="/" className="shrink-0">
+          <img
+            src="/logo.png"
+            alt="Thumbcraft"
+            className="h-6 w-auto object-contain sm:h-8"
+          />
         </Link>
 
         <div className="flex min-w-0 items-center gap-2">
@@ -82,7 +83,7 @@ export function SiteHeader() {
             <>
               <button
                 type="button"
-                onClick={() => navigate("/wallet")}
+                onClick={() => navigate("/dashboard/wallet")}
                 className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-card/90 px-2.5 py-1 text-sm font-medium text-foreground shadow-xs transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                 aria-label={`${balanceCoins ?? 0} coins — open wallet`}
               >
@@ -124,10 +125,17 @@ export function SiteHeader() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="gap-1.5 py-1.5 text-xs"
-                    onSelect={() => navigate("/wallet")}
+                    onSelect={() => navigate("/dashboard/wallet")}
                   >
                     <Wallet className="size-3.5" />
                     Wallet & billing
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="gap-1.5 py-1.5 text-xs"
+                    onSelect={() => navigate("/dashboard/transactions")}
+                  >
+                    <History className="size-3.5" />
+                    Transactions
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem

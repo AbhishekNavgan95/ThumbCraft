@@ -125,6 +125,28 @@ export async function registerWalletRoutes(
     },
   );
 
+  app.get(
+    "/api/wallet/transactions",
+    { preHandler: authHook },
+    async (request, reply) => {
+      const query = request.query as Record<string, string | undefined>;
+      const params = new URLSearchParams();
+      if (query.limit) params.set("limit", query.limit);
+      if (query.cursor) params.set("cursor", query.cursor);
+      const qs = params.toString();
+
+      const result = await proxyJson(
+        `${config.WALLET_SERVICE_URL}/api/wallet/transactions${qs ? `?${qs}` : ""}`,
+        {
+          method: "GET",
+          headers: buildDownstreamHeaders(request),
+        },
+      );
+
+      return reply.status(result.status).send(result.body);
+    },
+  );
+
   app.post(
     "/api/wallet/packages",
     { preHandler: adminHook },

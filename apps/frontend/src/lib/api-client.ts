@@ -7,7 +7,17 @@ import type {
   VerifyOtpResponse,
 } from "@/types/auth"
 import type { CategoriesResponse } from "@/types/gallery"
-import type { WalletBalance } from "@/types/wallet"
+import type {
+  ModelsResponse,
+  ReferenceUploadResponse,
+} from "@/types/generation"
+import type {
+  CheckoutStart,
+  PackagesResponse,
+  PaymentStatusResponse,
+  TransactionsResponse,
+  WalletBalance,
+} from "@/types/wallet"
 
 export type ApiError = {
   message: string
@@ -141,8 +151,45 @@ export const api = {
     listCategories: () =>
       apiClient.get<CategoriesResponse>("/api/template-categories"),
   },
+  models: {
+    list: () => apiClient.get<ModelsResponse>("/api/models"),
+  },
+  uploads: {
+    reference: (file: File, sessionId?: string) => {
+      const form = new FormData()
+      form.append("image", file)
+      if (sessionId) form.append("sessionId", sessionId)
+      return apiClient.post<ReferenceUploadResponse>(
+        "/api/uploads/reference",
+        form,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+          transformRequest: [
+            (data, headers) => {
+              if (data instanceof FormData) {
+                delete headers["Content-Type"]
+              }
+              return data
+            },
+          ],
+        },
+      )
+    },
+  },
   wallet: {
     getBalance: () => apiClient.get<WalletBalance>("/api/wallet"),
+    listPackages: () =>
+      apiClient.get<PackagesResponse>("/api/wallet/packages"),
+    startCheckout: (packageId: string) =>
+      apiClient.post<CheckoutStart>("/api/wallet/checkout", { packageId }),
+    getPaymentStatus: (sessionId: string) =>
+      apiClient.get<PaymentStatusResponse>(
+        `/api/wallet/payments/${encodeURIComponent(sessionId)}`,
+      ),
+    listTransactions: (params?: { limit?: number; cursor?: string }) =>
+      apiClient.get<TransactionsResponse>("/api/wallet/transactions", {
+        params,
+      }),
   },
   health: () => apiClient.get("/health"),
 }

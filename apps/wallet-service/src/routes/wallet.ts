@@ -16,6 +16,7 @@ import {
   patchPackage,
 } from "../controllers/package.controller.js";
 import { startCheckout, getPaymentStatus } from "../controllers/checkout.controller.js";
+import { listTransactions } from "../controllers/transaction.controller.js";
 
 export async function registerWalletRoutes(
   app: FastifyInstance,
@@ -177,6 +178,24 @@ export async function registerWalletRoutes(
     async (request, reply) => {
       const { sessionId } = request.params as { sessionId: string };
       const result = await getPaymentStatus(prisma, request.user!.id, sessionId);
+      return reply.status(200).send(result);
+    },
+  );
+
+  app.get(
+    "/api/wallet/transactions",
+    {
+      preHandler: async (request) => {
+        await app.requireAuth(request);
+      },
+    },
+    async (request, reply) => {
+      const query = request.query as { limit?: string; cursor?: string };
+      const limit = query.limit ? Number(query.limit) : undefined;
+      const result = await listTransactions(prisma, request.user!.id, {
+        limit: Number.isFinite(limit) ? limit : undefined,
+        cursor: query.cursor,
+      });
       return reply.status(200).send(result);
     },
   );

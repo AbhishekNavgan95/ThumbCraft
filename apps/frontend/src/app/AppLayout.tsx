@@ -1,6 +1,7 @@
 import { useEffect } from "react"
 import { Outlet } from "react-router-dom"
 import { AuthDrawer } from "@/components/auth/AuthDrawer"
+import { Toaster } from "@/components/ui/sonner"
 import { useAuthStore } from "@/stores/auth-store"
 
 export function AppLayout() {
@@ -12,6 +13,7 @@ export function AppLayout() {
     <div className="min-h-svh">
       <Outlet />
       <AuthDrawer />
+      <Toaster position="top-center" richColors closeButton />
     </div>
   )
 }
