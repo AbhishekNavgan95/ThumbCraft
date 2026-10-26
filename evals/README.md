@@ -48,3 +48,24 @@ Cases list `"kind": "human_glance"` checks for thumbnail fitness (title readabil
 ## Results
 
 Output lands in `evals/results/<ISO-date>/`: per-case JSON (pass/fail per check, latency, error, provider-input preview, path to the saved image) plus a `summary.json`.
+
+## Proof pack (Google Drive / GitHub / social)
+
+After a successful run, bundle inputs + outputs into a shareable folder and zip:
+
+```bash
+pnpm eval:pack
+```
+
+Creates `evals/proof-packs/thumbcraft-golden-eval-<run-id>/`:
+
+```text
+01-inputs/cases/      # case JSON (prompts + prefs + checks)
+01-inputs/fixtures/   # reference images
+02-outputs/images/    # generated JPGs
+02-outputs/scores/    # per-case results
+02-outputs/summary.json
+README.md             # index table for humans
+```
+
+Upload the folder or the sibling `.zip` to Drive and link it from a release, issue, or post. Proof packs are gitignored (large binaries).

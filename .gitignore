@@ -13,3 +13,4 @@ coverage/
 **/src/generated/
 evals/results/*
 !evals/results/.gitkeep
+evals/proof-packs/

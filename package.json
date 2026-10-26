@@ -11,6 +11,7 @@
     "test": "turbo run test",
     "test:prepare": "node infra/scripts/ensure-test-databases.mjs",
     "eval:golden": "pnpm --filter @thumbcraft/generation-worker eval:golden",
+    "eval:pack": "node infra/scripts/pack-eval-proof.mjs",
     "typecheck": "turbo run typecheck",
     "infra:up": "docker compose up -d",
     "infra:down": "docker compose down",
