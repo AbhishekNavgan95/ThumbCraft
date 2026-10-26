@@ -1,0 +1,35 @@
+{
+  "id": "01-first-turn-full-preferences",
+  "feature": "first-turn prompt assembly + preference catalog",
+  "prompt": "Design a YouTube thumbnail for a video titled around shipping a SaaS MVP in one weekend. Show a confident indie founder at a laptop on the right third of the frame, a glowing product UI mockup floating on the left, and keep the center clear for a short title. High click-through energy, readable when the image is the size of a postage stamp.",
+  "preferences": {
+    "niche": "Business",
+    "mood": "Exciting",
+    "visualStyle": "Modern",
+    "primaryColor": "Orange",
+    "backgroundStyle": "Gradient",
+    "lighting": "High Contrast",
+    "composition": "Rule of Thirds",
+    "faceEmphasis": "Medium",
+    "includeText": "Yes",
+    "textStyle": "Bold",
+    "textContent": "MVP IN 48H"
+  },
+  "isFirstTurn": true,
+  "modelId": "gemini-3.1-flash-image",
+  "aspectRatio": "16:9",
+  "resolution": "1K",
+  "checks": [
+    { "kind": "has_image_bytes" },
+    { "kind": "min_bytes", "value": 8000 },
+    { "kind": "aspect_ratio", "value": "16:9", "tolerance": 0.08 },
+    {
+      "kind": "human_glance",
+      "description": "Feels like a YouTube thumbnail: clear subject, orange as accent (not a full-frame orange wash), title text present and not glued to the edges"
+    },
+    {
+      "kind": "human_glance",
+      "description": "Preferences read as light modifiers — founder + UI scene still dominate over style labels"
+    }
+  ]
+}

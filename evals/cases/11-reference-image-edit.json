@@ -1,0 +1,30 @@
+{
+  "id": "11-reference-image-edit",
+  "feature": "referenceImages (image-to-image / multimodal edit)",
+  "prompt": "Use the attached reference image as the hero product shape. Transform that blue square into a sleek futuristic smartphone standing upright on a reflective black desk, soft studio rim light, cyberpunk city bokeh in the far background. Keep a simple rectangular phone silhouette inspired by the reference block. No text.",
+  "preferences": {
+    "niche": "Technology",
+    "mood": "Luxury",
+    "visualStyle": "Cyberpunk",
+    "primaryColor": "Blue",
+    "backgroundStyle": "Cyberpunk",
+    "lighting": "Neon",
+    "composition": "Centered",
+    "faceEmphasis": "None",
+    "includeText": "No"
+  },
+  "isFirstTurn": true,
+  "referenceImage": "fixtures/reference-subject.png",
+  "modelId": "gemini-3.1-flash-image",
+  "aspectRatio": "16:9",
+  "resolution": "1K",
+  "checks": [
+    { "kind": "has_image_bytes" },
+    { "kind": "min_bytes", "value": 6000 },
+    { "kind": "aspect_ratio", "value": "16:9", "tolerance": 0.08 },
+    {
+      "kind": "human_glance",
+      "description": "Output is a phone/product scene clearly influenced by the reference block (not ignoring the attached image)"
+    }
+  ]
+}

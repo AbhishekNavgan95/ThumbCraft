@@ -1,0 +1,35 @@
+{
+  "id": "03-exact-text-overlay",
+  "feature": "includeText + textStyle + exact textContent",
+  "prompt": "Make a programming tutorial thumbnail: a dark code editor screen slightly blurred in the background, a bright foreground focal area for huge title text, and a small React logo mark as a prop (not as the main subject). The text must be the hero.",
+  "preferences": {
+    "niche": "Programming",
+    "mood": "Urgent",
+    "visualStyle": "Modern",
+    "primaryColor": "Blue",
+    "backgroundStyle": "Abstract",
+    "lighting": "Dramatic",
+    "composition": "Left Focus",
+    "faceEmphasis": "None",
+    "includeText": "Yes",
+    "textStyle": "Outline",
+    "textContent": "React in 15 Minutes"
+  },
+  "isFirstTurn": true,
+  "modelId": "gemini-3.1-flash-image",
+  "aspectRatio": "16:9",
+  "resolution": "1K",
+  "checks": [
+    { "kind": "has_image_bytes" },
+    { "kind": "min_bytes", "value": 8000 },
+    { "kind": "aspect_ratio", "value": "16:9", "tolerance": 0.08 },
+    {
+      "kind": "human_glance",
+      "description": "Overlay text is present, large, and readable; prefer exact or near-exact 'React in 15 Minutes'"
+    },
+    {
+      "kind": "human_glance",
+      "description": "Text keeps a safe margin from all four edges (not clipped by the border)"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "id": "02-no-text-photoreal-product",
+  "feature": "includeText=No (explicit no overlay)",
+  "prompt": "Create a clean product-hero thumbnail of a matte black wireless over-ear headphone resting on a pale stone slab. Studio product photography, shallow depth of field, no logos, no watermarks, and absolutely no letters or numbers anywhere in the image.",
+  "preferences": {
+    "niche": "Technology",
+    "mood": "Minimal",
+    "visualStyle": "Photorealistic",
+    "primaryColor": "Black",
+    "backgroundStyle": "Studio",
+    "lighting": "Soft",
+    "composition": "Centered",
+    "faceEmphasis": "None",
+    "includeText": "No"
+  },
+  "isFirstTurn": true,
+  "modelId": "gemini-3.1-flash-image",
+  "aspectRatio": "16:9",
+  "resolution": "1K",
+  "checks": [
+    { "kind": "has_image_bytes" },
+    { "kind": "min_bytes", "value": 6000 },
+    { "kind": "aspect_ratio", "value": "16:9", "tolerance": 0.08 },
+    {
+      "kind": "human_glance",
+      "description": "Headphones are the unmistakable subject; image has no readable overlay text"
+    }
+  ]
+}

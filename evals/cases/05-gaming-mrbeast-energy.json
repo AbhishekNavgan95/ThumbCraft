@@ -1,0 +1,31 @@
+{
+  "id": "05-gaming-mrbeast-energy",
+  "feature": "niche + mood + visualStyle extremes (Gaming / Energetic / MrBeast Style)",
+  "prompt": "Thumbnail for a gaming challenge video: a shocked streamer pointing at a glowing treasure chest overflowing with coins, fireworks and confetti in the air, maximum YouTube clickbait energy without looking cheap or illegible.",
+  "preferences": {
+    "niche": "Gaming",
+    "mood": "Energetic",
+    "visualStyle": "MrBeast Style",
+    "primaryColor": "Yellow",
+    "backgroundStyle": "Gaming Room",
+    "lighting": "Neon",
+    "composition": "Centered",
+    "faceEmphasis": "Extreme",
+    "includeText": "Yes",
+    "textStyle": "Gaming",
+    "textContent": "$10,000 CHALLENGE"
+  },
+  "isFirstTurn": true,
+  "modelId": "gemini-3.1-flash-image",
+  "aspectRatio": "16:9",
+  "resolution": "1K",
+  "checks": [
+    { "kind": "has_image_bytes" },
+    { "kind": "min_bytes", "value": 10000 },
+    { "kind": "aspect_ratio", "value": "16:9", "tolerance": 0.08 },
+    {
+      "kind": "human_glance",
+      "description": "High-energy MrBeast-like thumbnail: big face, loud contrast, yellow accents, readable challenge text"
+    }
+  ]
+}

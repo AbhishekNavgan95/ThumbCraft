@@ -10,7 +10,7 @@ Read the file once for the story. Then use the “What to change in this repo”
 
 ## Suggested order
 
-1. [Evaluation and testing](./01-evaluation-and-testing.md) — CI proves generate/wallet/jobs with fakes; manual golden evals score real Gemini against checks (not in CI).
+1. [Evaluation and testing](./01-evaluation-and-testing.md) — **done:** CI proves generate/wallet/jobs with fakes; manual golden evals in `evals/` (see completion note in that file).
 2. [Data and conversation state](./02-data-and-conversation-state.md) — lock sessions, messages, and jobs as the source of truth.
 3. [Reliability](./03-reliability.md) — same request twice, crash mid-job, money that cannot double-charge.
 4. [Failure tolerance](./04-failure-tolerance.md) — Gemini outages, dropped events, stuck reservations.

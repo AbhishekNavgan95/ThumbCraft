@@ -1,0 +1,29 @@
+{
+  "id": "06-aspect-square-1x1",
+  "feature": "aspectRatio=1:1 (Instagram / feed square)",
+  "prompt": "Square social thumbnail for a food reel cover: a towering smash burger mid-bite, cheese pull, sesame bun, steam rising. Center the burger; leave a little breathing room around it for mobile crop safety.",
+  "preferences": {
+    "niche": "Food",
+    "mood": "Exciting",
+    "visualStyle": "Photorealistic",
+    "primaryColor": "Red",
+    "backgroundStyle": "Solid Color",
+    "lighting": "Studio",
+    "composition": "Centered",
+    "faceEmphasis": "None",
+    "includeText": "No"
+  },
+  "isFirstTurn": true,
+  "modelId": "gemini-3.1-flash-image",
+  "aspectRatio": "1:1",
+  "resolution": "1K",
+  "checks": [
+    { "kind": "has_image_bytes" },
+    { "kind": "min_bytes", "value": 6000 },
+    { "kind": "aspect_ratio", "value": "1:1", "tolerance": 0.05 },
+    {
+      "kind": "human_glance",
+      "description": "Clearly square composition; burger fills the frame without awkward letterboxing"
+    }
+  ]
+}

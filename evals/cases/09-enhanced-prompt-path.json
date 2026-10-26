@@ -1,0 +1,33 @@
+{
+  "id": "09-enhanced-prompt-path",
+  "feature": "usedEnhancedPrompt (enhance path wins over original)",
+  "prompt": "ai thumbnail cool",
+  "enhancedPrompt": "Cinematic YouTube thumbnail about artificial intelligence: a human silhouette facing a luminous neural network orb, volumetric god-rays, deep blues and cyan sparks, mysterious and premium mood, large empty band on the left for a title, no logos.",
+  "usedEnhancedPrompt": true,
+  "preferences": {
+    "niche": "AI",
+    "mood": "Mysterious",
+    "visualStyle": "Cinematic",
+    "primaryColor": "Blue",
+    "backgroundStyle": "Space",
+    "lighting": "Volumetric",
+    "composition": "Left Focus",
+    "faceEmphasis": "Subtle",
+    "includeText": "Yes",
+    "textStyle": "Glow",
+    "textContent": "AI CHANGED THIS"
+  },
+  "isFirstTurn": true,
+  "modelId": "gemini-3.1-flash-image",
+  "aspectRatio": "16:9",
+  "resolution": "1K",
+  "checks": [
+    { "kind": "has_image_bytes" },
+    { "kind": "min_bytes", "value": 8000 },
+    { "kind": "aspect_ratio", "value": "16:9", "tolerance": 0.08 },
+    {
+      "kind": "human_glance",
+      "description": "Matches the enhanced cinematic AI scene — not a literal reading of the vague original 'ai thumbnail cool'"
+    }
+  ]
+}

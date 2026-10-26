@@ -1,0 +1,31 @@
+{
+  "id": "08-color-accent-not-wash",
+  "feature": "primaryColor accent rule (not full-frame tint)",
+  "prompt": "Finance explainer thumbnail: a calm professional woman holding a tablet that shows a rising chart, neutral office backdrop, daylight through blinds. The scene should feel trustworthy and real — not stylized into a monochrome color filter.",
+  "preferences": {
+    "niche": "Finance",
+    "mood": "Professional",
+    "visualStyle": "Photorealistic",
+    "primaryColor": "Purple",
+    "backgroundStyle": "Office",
+    "lighting": "Natural",
+    "composition": "Rule of Thirds",
+    "faceEmphasis": "Medium",
+    "includeText": "Yes",
+    "textStyle": "Modern",
+    "textContent": "STOP THIS MISTAKE"
+  },
+  "isFirstTurn": true,
+  "modelId": "gemini-3.1-flash-image",
+  "aspectRatio": "16:9",
+  "resolution": "1K",
+  "checks": [
+    { "kind": "has_image_bytes" },
+    { "kind": "min_bytes", "value": 8000 },
+    { "kind": "aspect_ratio", "value": "16:9", "tolerance": 0.08 },
+    {
+      "kind": "human_glance",
+      "description": "Purple appears as accents (UI, clothing trim, highlights) — not a purple wash over the whole image"
+    }
+  ]
+}

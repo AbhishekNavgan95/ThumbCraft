@@ -1,0 +1,31 @@
+{
+  "id": "14-3d-render-education",
+  "feature": "visualStyle=3D Render + education niche + soft lighting",
+  "prompt": "Friendly education thumbnail in polished 3D render style: a cute isometric classroom desk with floating glowing books, a tiny laptop, and a big question-mark prop. Soft pastel world, inviting for kids-and-parents science explainers. Leave space on the right for a short title.",
+  "preferences": {
+    "niche": "Education",
+    "mood": "Friendly",
+    "visualStyle": "3D Render",
+    "primaryColor": "Yellow",
+    "backgroundStyle": "Solid Color",
+    "lighting": "Soft",
+    "composition": "Right Focus",
+    "faceEmphasis": "None",
+    "includeText": "Yes",
+    "textStyle": "3D",
+    "textContent": "WHY IS THE SKY BLUE?"
+  },
+  "isFirstTurn": true,
+  "modelId": "gemini-3.1-flash-image",
+  "aspectRatio": "16:9",
+  "resolution": "1K",
+  "checks": [
+    { "kind": "has_image_bytes" },
+    { "kind": "min_bytes", "value": 8000 },
+    { "kind": "aspect_ratio", "value": "16:9", "tolerance": 0.08 },
+    {
+      "kind": "human_glance",
+      "description": "Looks like a soft 3D render (not photo); educational and friendly; title readable with edge padding"
+    }
+  ]
+}

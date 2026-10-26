@@ -1,0 +1,35 @@
+{
+  "id": "04-face-emphasis-creator",
+  "feature": "faceEmphasis=Strong",
+  "prompt": "YouTube reaction-style thumbnail of a young travel creator mid-gasp looking at the camera, mouth open in surprise, standing in front of a misty mountain overlook. Face must dominate the frame; landscape is secondary atmosphere only.",
+  "preferences": {
+    "niche": "Travel",
+    "mood": "Shocking",
+    "visualStyle": "Cinematic",
+    "primaryColor": "Auto",
+    "backgroundStyle": "Nature",
+    "lighting": "Golden Hour",
+    "composition": "Close-up",
+    "faceEmphasis": "Strong",
+    "includeText": "Yes",
+    "textStyle": "Bold",
+    "textContent": "I WAS NOT READY"
+  },
+  "isFirstTurn": true,
+  "modelId": "gemini-3.1-flash-image",
+  "aspectRatio": "16:9",
+  "resolution": "1K",
+  "checks": [
+    { "kind": "has_image_bytes" },
+    { "kind": "min_bytes", "value": 8000 },
+    { "kind": "aspect_ratio", "value": "16:9", "tolerance": 0.08 },
+    {
+      "kind": "human_glance",
+      "description": "Face is large and expressive; expression drives the click more than the landscape"
+    },
+    {
+      "kind": "human_glance",
+      "description": "Face and title stay inside the frame with padding from the edges"
+    }
+  ]
+}

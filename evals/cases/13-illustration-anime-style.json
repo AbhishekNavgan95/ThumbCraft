@@ -1,0 +1,31 @@
+{
+  "id": "13-illustration-anime-style",
+  "feature": "visualStyle=Anime / Illustration branch",
+  "prompt": "Anime-style thumbnail for a music channel: a cheerful singer with oversized headphones jumping on stage, speed lines, sparkles, and a bright spotlight. Stylized illustration — not photoreal. Keep the character fully inside the frame.",
+  "preferences": {
+    "niche": "Music",
+    "mood": "Funny",
+    "visualStyle": "Anime",
+    "primaryColor": "Pink",
+    "backgroundStyle": "Abstract",
+    "lighting": "Neon",
+    "composition": "Centered",
+    "faceEmphasis": "Strong",
+    "includeText": "Yes",
+    "textStyle": "Gradient",
+    "textContent": "NEW BOP"
+  },
+  "isFirstTurn": true,
+  "modelId": "gemini-3.1-flash-image",
+  "aspectRatio": "16:9",
+  "resolution": "1K",
+  "checks": [
+    { "kind": "has_image_bytes" },
+    { "kind": "min_bytes", "value": 8000 },
+    { "kind": "aspect_ratio", "value": "16:9", "tolerance": 0.08 },
+    {
+      "kind": "human_glance",
+      "description": "Clearly anime/illustration style (not photoreal); pink accents; character not cropped by edges"
+    }
+  ]
+}

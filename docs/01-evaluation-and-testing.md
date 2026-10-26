@@ -85,3 +85,51 @@ Online eval (download vs regenerate signals) can wait.
 ## Refine here, then move on
 
 If a test is painful to write, the production code is probably too tangled with `index.ts`. Fix that seam in the worker before you add more product features. Do not start OpenTelemetry until this file’s “done when” is true.
+
+---
+
+## What we actually built (completion note)
+
+Status: **done** for this aspect. Move on to [02 — data and conversation state](./02-data-and-conversation-state.md).
+
+### Pipeline tests (CI-safe)
+
+| Piece | Where |
+|-------|--------|
+| Vitest scripts | `apps/api-gateway`, `apps/wallet-service`, `apps/generation-worker` — root `pnpm test` → turbo |
+| Test DBs | `wallet_test` / `generation_test` via Compose init + `pnpm test:prepare` |
+| Wallet seam | `createApp` extracted; reserve/capture/release + billing handlers against real Postgres |
+| Generate path | Happy path, idempotency 409, insufficient funds (no enqueue), fake worker success/failure, Fastify inject |
+| Gateway | Missing JWT → 401; forwards `X-Correlation-Id` + `Idempotency-Key` |
+| Fakes | Mock wallet / BullMQ queue / RabbitMQ; `FAKE_IMAGE_GENERATION` for worker image path — no Gemini/Stripe in CI |
+
+### Manual golden evals (not CI)
+
+| Piece | Where |
+|-------|--------|
+| Cases | `evals/cases/` — 14 cases covering first-turn prefs, text on/off, face emphasis, aspects, enhance path, follow-up, reference images, style branches |
+| Runner | `pnpm eval:golden` → `apps/generation-worker/scripts/eval-golden.ts` (same `resolveUserText` + `resolveProviderInput` as production) |
+| Operator guide | [`evals/README.md`](../evals/README.md) — automated vs human-glance checks, feature matrix, results layout |
+| Results | `evals/results/<ISO-date>/` (gitignored except `.gitkeep`) — attach a dated folder when you need release/docs evidence |
+
+### How to run
+
+```bash
+pnpm infra:up
+pnpm test:prepare   # once, or after schema migrations
+pnpm test           # free, deterministic — use on every PR
+
+# Manual only (needs GEMINI_API_KEY in apps/generation-worker/.env):
+pnpm eval:golden
+```
+
+### Deferred on purpose
+
+- No coverage gate yet (would greenwash if only health routes were covered).
+- No Playwright wizard E2E — money bugs live in worker/wallet.
+- No eval SaaS / image pixel diffs / evals in CI.
+- Canary prompts against a live deploy still wait until there is a deploy story.
+
+### Why this shape
+
+CI must stay free and deterministic. Picture quality is scored manually against checks (bytes, aspect, min size + human glance), never against a golden PNG. Painful tests pushed a small seam fix (`wallet-service` `createApp`) instead of mocking the database for billing.

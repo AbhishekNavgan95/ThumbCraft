@@ -1,0 +1,31 @@
+{
+  "id": "07-aspect-vertical-9x16",
+  "feature": "aspectRatio=9:16 (Shorts / Reels / TikTok)",
+  "prompt": "Vertical Shorts cover: a fitness coach mid-jump rope in a bright gym, camera slightly low angle, sweat and motion blur on the rope. Keep the top third relatively clean for a short title overlay.",
+  "preferences": {
+    "niche": "Fitness",
+    "mood": "Inspirational",
+    "visualStyle": "Documentary",
+    "primaryColor": "Green",
+    "backgroundStyle": "Auto",
+    "lighting": "Natural",
+    "composition": "Wide Shot",
+    "faceEmphasis": "Subtle",
+    "includeText": "Yes",
+    "textStyle": "Minimal",
+    "textContent": "30-DAY ABS"
+  },
+  "isFirstTurn": true,
+  "modelId": "gemini-3.1-flash-image",
+  "aspectRatio": "9:16",
+  "resolution": "1K",
+  "checks": [
+    { "kind": "has_image_bytes" },
+    { "kind": "min_bytes", "value": 6000 },
+    { "kind": "aspect_ratio", "value": "9:16", "tolerance": 0.08 },
+    {
+      "kind": "human_glance",
+      "description": "Portrait orientation works as a Shorts cover; subject readable on a phone screen"
+    }
+  ]
+}

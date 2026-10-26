@@ -1,0 +1,31 @@
+{
+  "id": "12-composition-lighting-background",
+  "feature": "composition + lighting + backgroundStyle combo",
+  "prompt": "Movie-review thumbnail with a split layout: left half is a dramatic still of a rainy neon city street at night, right half is a critic's thoughtful silhouette in a dark screening room. High contrast between the two halves so the split reads instantly at small size.",
+  "preferences": {
+    "niche": "Movies",
+    "mood": "Dark",
+    "visualStyle": "Cinematic",
+    "primaryColor": "Red",
+    "backgroundStyle": "City",
+    "lighting": "Dramatic",
+    "composition": "Split Layout",
+    "faceEmphasis": "Subtle",
+    "includeText": "Yes",
+    "textStyle": "Luxury",
+    "textContent": "OVERHYPED?"
+  },
+  "isFirstTurn": true,
+  "modelId": "gemini-3.1-flash-image",
+  "aspectRatio": "16:9",
+  "resolution": "1K",
+  "checks": [
+    { "kind": "has_image_bytes" },
+    { "kind": "min_bytes", "value": 8000 },
+    { "kind": "aspect_ratio", "value": "16:9", "tolerance": 0.08 },
+    {
+      "kind": "human_glance",
+      "description": "Split layout is obvious; dramatic/cinematic lighting; red used as accent"
+    }
+  ]
+}

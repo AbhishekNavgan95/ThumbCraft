@@ -1,0 +1,30 @@
+{
+  "id": "10-follow-up-iterate",
+  "feature": "follow-up turn (isFirstTurn=false + previousInteractionId)",
+  "prompt": "Keep the same composition and subject, but swap the title text to EXACTLY: SHIPPED. Make the orange accents brighter and push the founder a little closer to camera. Do not redesign the whole thumbnail.",
+  "preferences": {
+    "mood": "Exciting",
+    "primaryColor": "Orange",
+    "includeText": "Yes",
+    "textStyle": "Bold",
+    "textContent": "SHIPPED"
+  },
+  "isFirstTurn": false,
+  "continueFrom": "01-first-turn-full-preferences",
+  "modelId": "gemini-3.1-flash-image",
+  "aspectRatio": "16:9",
+  "resolution": "1K",
+  "checks": [
+    { "kind": "has_image_bytes" },
+    { "kind": "min_bytes", "value": 8000 },
+    { "kind": "aspect_ratio", "value": "16:9", "tolerance": 0.08 },
+    {
+      "kind": "human_glance",
+      "description": "Reads as an edit of case 01 (same scene family), not a brand-new unrelated thumbnail"
+    },
+    {
+      "kind": "human_glance",
+      "description": "Title direction toward SHIPPED is visible; orange accents feel stronger"
+    }
+  ]
+}
