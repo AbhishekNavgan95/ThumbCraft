@@ -11,3 +11,5 @@ coverage/
 .turbo/
 *.tsbuildinfo
 **/src/generated/
+evals/results/*
+!evals/results/.gitkeep

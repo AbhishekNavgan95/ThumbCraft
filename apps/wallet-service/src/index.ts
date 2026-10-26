@@ -1,31 +1,21 @@
-import Fastify from "fastify";
 import { RabbitMQClient } from "@platform/rabbitmq-client";
 import { createLogger } from "@platform/logger";
+import { createApp } from "./app.js";
 import { loadWalletConfig } from "./config.js";
 import { startWalletEventsConsumer } from "./consumers/wallet-events.consumer.js";
 import { createPrismaClient } from "./db/index.js";
-import { registerAuthPlugin } from "./plugins/auth.js";
-import { registerErrorHandler } from "./plugins/error-handler.js";
-import { registerWalletRoutes } from "./routes/wallet.js";
-import { registerStripeWebhookRoutes } from "./routes/webhook.js";
 import { createStripeClient } from "./services/stripe.service.js";
-import "./types.js";
 
 const config = loadWalletConfig();
-const logger = createLogger({ service: config.SERVICE_NAME, level: config.LOG_LEVEL });
+const logger = createLogger({
+  service: config.SERVICE_NAME,
+  level: config.LOG_LEVEL,
+});
 
-const app = Fastify({ logger: false });
 const prisma = createPrismaClient();
 const rabbitmq = new RabbitMQClient({ url: config.RABBITMQ_URL });
 const stripe = createStripeClient(config);
-
-app.get("/health", async () => ({ status: "ok", service: config.SERVICE_NAME }));
-app.get("/ready", async () => ({ status: "ready", service: config.SERVICE_NAME }));
-
-registerErrorHandler(app, logger);
-await registerAuthPlugin(app);
-await registerStripeWebhookRoutes(app, { prisma, stripe, rabbitmq, config, logger });
-await registerWalletRoutes(app, { prisma, stripe, config });
+const app = await createApp({ config, logger, prisma, stripe, rabbitmq });
 
 async function start() {
   try {
@@ -57,7 +47,6 @@ async function shutdown() {
 process.on("SIGINT", () => {
   void shutdown().finally(() => process.exit(0));
 });
-
 process.on("SIGTERM", () => {
   void shutdown().finally(() => process.exit(0));
 });
