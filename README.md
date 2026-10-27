@@ -151,7 +151,7 @@ Postgres is the source of truth for chat and jobs. Redis is only the queue. Even
 
 `POST /api/generate` validates, writes messages, **reserves coins**, enqueues BullMQ, returns **202** with the job id. The UI polls `GET /api/jobs/:jobId` (and session messages). Polling is the default because a thumbnail takes tens of seconds; WebSockets would add reconnects without changing correctness.
 
-First turn assembles base prompt + preferences. Later turns send new user text against Gemini `previous_interaction_id` stored on the session — cheaper than resending the full transcript.
+First turn assembles base prompt + preferences. Later turns send new user text against Gemini `previous_interaction_id` stored on the session — cheaper than resending the full transcript. Detail: [Context management](docs/context-management.md), [ADR 001](docs/decisions/001-provider-side-continuity.md).
 
 ### 6. Idempotent money
 
@@ -416,13 +416,16 @@ How the product is meant to behave under load, failure, and ops — start at [do
 
 1. [Evaluation and testing](docs/01-evaluation-and-testing.md)
 2. [Data and conversation state](docs/02-data-and-conversation-state.md)
-3. [Reliability](docs/03-reliability.md)
-4. [Failure tolerance](docs/04-failure-tolerance.md)
-5. [Observability](docs/05-observability.md)
-6. [Cost and latency](docs/06-cost-and-latency.md)
-7. [Security, guardrails, privacy](docs/07-security-guardrails-privacy.md)
-8. [Load handling and scale](docs/08-load-handling-and-scale.md)
-9. [Deployment (later)](docs/09-deployment-later.md) → [deploymentPlan.md](deploymentPlan.md)
+3. [Context management](docs/context-management.md) — first vs later turn, interaction id, refs, evals
+4. [Reliability](docs/03-reliability.md)
+5. [Failure tolerance](docs/04-failure-tolerance.md) · [Failure modes (continuity)](docs/failure-modes.md)
+6. [Observability](docs/05-observability.md)
+7. [Cost and latency](docs/06-cost-and-latency.md)
+8. [Security, guardrails, privacy](docs/07-security-guardrails-privacy.md)
+9. [Load handling and scale](docs/08-load-handling-and-scale.md)
+10. [Deployment (later)](docs/09-deployment-later.md) → [deploymentPlan.md](deploymentPlan.md)
+
+Decisions: [ADR 001 — provider-side continuity](docs/decisions/001-provider-side-continuity.md).
 
 ---
 

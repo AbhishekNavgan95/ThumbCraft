@@ -14,3 +14,4 @@ coverage/
 evals/results/*
 !evals/results/.gitkeep
 evals/proof-packs/
+plan/
