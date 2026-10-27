@@ -1,75 +1,78 @@
-# React + TypeScript + Vite
+# Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Package:** `frontend`  
+**Dev server:** Vite, default `http://localhost:5173`  
+**API:** [API gateway](../api-gateway/README.md) only (`VITE_API_BASE_URL`).
 
-Currently, two official plugins are available:
+[← Root README](../../README.md)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+React 19 SPA for marketing, gallery browse, auth drawer, session chat, and wallet/profile. It does **not** talk to auth/wallet/worker ports.
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Approach
 
-## Expanding the ESLint configuration
+- **Single origin for APIs.** Axios client in `src/lib/api-client.ts` attaches Bearer JWT from storage and maps `AppError` codes for toasts.
+- **Chat product, not a wizard-only form.** Routes under `/dashboard/sessions/:sessionId` poll jobs after `POST /api/generate` (202). Empty sessions bootstrap via `POST /api/sessions` (worker reuses an empty thread).
+- **Zustand** for auth and chat client state; **Zod** for auth form schemas; **Radix / shadcn** UI.
+- **Gallery** is public-ish (`optionalAuth` on gateway) so landing pages can show templates; generate still requires login.
+- Legacy paths (`/generate`, `/wallet`) redirect into the dashboard.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```mermaid
+flowchart LR
+  Pages[Routes] --> Client[api-client Axios]
+  Client --> GW[localhost:3000]
+  AuthStore[auth-store] --> Client
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Routes
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| Path | Page |
+|------|------|
+| `/` | Home / marketing |
+| `/gallery/:categoryId` | Category templates |
+| `/dashboard/new` | New chat |
+| `/dashboard/sessions/:sessionId` | Session thread + composer |
+| `/dashboard/profile` | Profile + wallet UI |
+| `/dashboard/wallet/confirm` | Stripe return (`session_id` query) |
 
+---
+
+## Layout
+
+```text
+src/
+├── app/                 # layouts, router
+├── pages/
+├── components/          # generation, wallet, home, auth, ui
+├── stores/              # auth-store, chat-store
+├── lib/                 # api-client, preference-catalog, auth-token
+└── types/
 ```
+
+---
+
+## Configuration and scripts
+
+[`.env.example`](./.env.example):
+
+```bash
+VITE_API_BASE_URL=http://localhost:3000
+```
+
+```bash
+pnpm --filter frontend dev
+pnpm --filter frontend build
+pnpm --filter frontend lint
+```
+
+Production static files are intended for S3 + CloudFront; the browser still calls the public gateway / ALB. See [deploymentPlan.md](../../deploymentPlan.md).
+
+---
+
+## Related
+
+- [API gateway](../api-gateway/README.md)
+- [Generation worker](../generation-worker/README.md) — session/message/job contract
