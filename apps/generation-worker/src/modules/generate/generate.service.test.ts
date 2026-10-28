@@ -604,4 +604,270 @@ describe("GenerateService", () => {
     expect(row.lastError).toBeNull();
     expect(fakeRabbit.published).toHaveLength(1);
   });
+
+  // --- Turn serialization (brief 02) ---
+
+  it("parallel submits: one accepted, one rejected with SESSION_BUSY", async () => {
+    const prisma = getTestPrisma();
+    const model = await seedVisibleModel(prisma);
+    const fakeQueue = createFakeQueue();
+    const fakeWallet = createFakeWallet();
+    const fakeRabbit = createFakeRabbitmq();
+    const user = testUser();
+
+    const service = new GenerateService({
+      prisma,
+      rabbitmq: fakeRabbit.rabbitmq,
+      wallet: fakeWallet.wallet,
+      logger: createSilentLogger(),
+      storage: null,
+      fakeImageGeneration: true,
+      generationQueue: fakeQueue.queue,
+    });
+
+    // Create a session first
+    const session = await prisma.generationSession.create({
+      data: { userId: user.userId, turnSeq: 0 },
+    });
+    const sessionId = session.id;
+    const body = generateBody(model.id);
+
+    const [r1, r2] = await Promise.allSettled([
+      service.generate({
+        user,
+        body: { ...body, sessionId },
+        correlationId: user.correlationId!,
+        idempotencyKey: `race-${randomUUID()}`,
+      }),
+      service.generate({
+        user,
+        body: { ...body, sessionId },
+        correlationId: user.correlationId!,
+        idempotencyKey: `race-${randomUUID()}`,
+      }),
+    ]);
+
+    const fulfilled = [r1, r2].filter(
+      (r): r is PromiseFulfilledResult<any> => r.status === "fulfilled",
+    );
+    const rejected = [r1, r2].filter(
+      (r): r is PromiseRejectedResult => r.status === "rejected",
+    );
+
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    expect(rejected[0].reason).toMatchObject({
+      code: "SESSION_BUSY",
+      statusCode: 409,
+    });
+
+    // Exactly one non-terminal job for this session
+    const activeJobs = await prisma.generationJob.findMany({
+      where: {
+        sessionId,
+        kind: "generation",
+        status: { in: ["created", "reserved", "processing"] },
+      },
+    });
+    expect(activeJobs).toHaveLength(1);
+  });
+
+  it("next turn continues from the session head", async () => {
+    const prisma = getTestPrisma();
+    const model = await seedVisibleModel(prisma);
+    const fakeQueue = createFakeQueue();
+    const fakeWallet = createFakeWallet();
+    const fakeRabbit = createFakeRabbitmq();
+    const user = testUser();
+
+    const service = new GenerateService({
+      prisma,
+      rabbitmq: fakeRabbit.rabbitmq,
+      wallet: fakeWallet.wallet,
+      logger: createSilentLogger(),
+      storage: null,
+      fakeImageGeneration: true,
+      generationQueue: fakeQueue.queue,
+    });
+
+    // Turn 1
+    const turn1Result = await service.generate({
+      user,
+      body: generateBody(model.id),
+      correlationId: user.correlationId!,
+      idempotencyKey: `t1-${randomUUID()}`,
+    });
+    const turn1Payload = fakeQueue.enqueued[0]!.payload;
+    await service.processQueuedJob(turn1Payload);
+
+    const turn1Assistant = await prisma.generationMessage.findUniqueOrThrow({
+      where: { id: turn1Result.assistantMessage.id },
+    });
+    const interactionId = turn1Assistant.interactionId!;
+
+    // Verify the session head is at turn 1's interaction before turn 2 runs
+    const sessionAfterTurn1 = await prisma.generationSession.findUniqueOrThrow({
+      where: { id: turn1Result.session.id },
+    });
+    expect(sessionAfterTurn1.latestInteractionId).toBe(interactionId);
+
+    // Turn 2
+    const turn2Result = await service.generate({
+      user,
+      body: { ...generateBody(model.id), sessionId: turn1Result.session.id, originalPrompt: "make it red" },
+      correlationId: user.correlationId!,
+      idempotencyKey: `t2-${randomUUID()}`,
+    });
+    const turn2Payload = fakeQueue.enqueued[1]!.payload;
+    await service.processQueuedJob(turn2Payload);
+
+    // The session head should now be at turn 2's interaction
+    const sessionAfterTurn2 = await prisma.generationSession.findUniqueOrThrow({
+      where: { id: turn1Result.session.id },
+    });
+    expect(sessionAfterTurn2.latestInteractionId).not.toBe(interactionId);
+    // Turn 2 should have its own interactionId
+    expect(sessionAfterTurn2.latestInteractionId).toBeTruthy();
+  });
+
+  it("superseded turn does not move the head", async () => {
+    const prisma = getTestPrisma();
+    const model = await seedVisibleModel(prisma);
+    const fakeQueue = createFakeQueue();
+    const fakeWallet = createFakeWallet();
+    const fakeRabbit = createFakeRabbitmq();
+    const user = testUser();
+
+    const service = new GenerateService({
+      prisma,
+      rabbitmq: fakeRabbit.rabbitmq,
+      wallet: fakeWallet.wallet,
+      logger: createSilentLogger(),
+      storage: null,
+      fakeImageGeneration: true,
+      generationQueue: fakeQueue.queue,
+    });
+
+    // Create a session and two turns with turnSeq 2 and 3
+    const session = await prisma.generationSession.create({
+      data: { userId: user.userId, turnSeq: 3, latestInteractionId: "head-turn-3" },
+    });
+
+    // Create user message turnSeq 2
+    const userMsg2 = await prisma.generationMessage.create({
+      data: {
+        sessionId: session.id,
+        role: "user",
+        modelId: model.id,
+        originalPrompt: "turn 2",
+        requiredAspectRatio: "16:9",
+        requiredResolution: "1K",
+        turnSeq: 2,
+      },
+    });
+    const assistantMsg2 = await prisma.generationMessage.create({
+      data: {
+        sessionId: session.id,
+        role: "assistant",
+        modelId: model.id,
+        referenceId: userMsg2.id,
+        status: "queued",
+        turnSeq: 2,
+      },
+    });
+    const job2 = await prisma.generationJob.create({
+      data: {
+        userId: user.userId,
+        kind: "generation",
+        coinCost: 5,
+        idempotencyKey: `superseded-${randomUUID()}`,
+        sessionId: session.id,
+        messageId: assistantMsg2.id,
+        turnSeq: 2,
+        status: "processing",
+      },
+    });
+
+    // Turn 3 already "completed" (simulated by having a later turnSeq and a head)
+    const userMsg3 = await prisma.generationMessage.create({
+      data: {
+        sessionId: session.id,
+        role: "user",
+        modelId: model.id,
+        originalPrompt: "turn 3",
+        requiredAspectRatio: "16:9",
+        requiredResolution: "1K",
+        turnSeq: 3,
+      },
+    });
+    await prisma.generationMessage.create({
+      data: {
+        sessionId: session.id,
+        role: "assistant",
+        modelId: model.id,
+        referenceId: userMsg3.id,
+        status: "completed",
+        imageUrl: "https://example.test/turn3.png",
+        mimeType: "image/png",
+        turnSeq: 3,
+        interactionId: "head-turn-3",
+        completedAt: new Date(),
+      },
+    });
+
+    // Run the superseded turn (turn 2) - it should complete but NOT move the head
+    const payload = { jobId: job2.id, userId: user.userId, correlationId: user.correlationId!, email: user.email, name: user.name, role: user.role };
+    await service.processQueuedJob(payload);
+
+    const afterSession = await prisma.generationSession.findUniqueOrThrow({
+      where: { id: session.id },
+    });
+    // Head should still be turn 3's interactionId
+    expect(afterSession.latestInteractionId).toBe("head-turn-3");
+  });
+
+  it("final failure frees the session slot for a new turn", async () => {
+    const prisma = getTestPrisma();
+    const model = await seedVisibleModel(prisma);
+    const fakeQueue = createFakeQueue();
+    const fakeWallet = createFakeWallet();
+    const fakeRabbit = createFakeRabbitmq();
+    const user = testUser();
+
+    const service = new GenerateService({
+      prisma,
+      rabbitmq: fakeRabbit.rabbitmq,
+      wallet: fakeWallet.wallet,
+      logger: createSilentLogger(),
+      storage: null,
+      fakeImageGeneration: true,
+      generationQueue: fakeQueue.queue,
+    });
+
+    // Start a turn and fail it
+    const result = await service.generate({
+      user,
+      body: generateBody(model.id),
+      correlationId: user.correlationId!,
+      idempotencyKey: `free-slot-${randomUUID()}`,
+    });
+    const payload = fakeQueue.enqueued[0]!.payload;
+    await service.finalizeJobFailure(payload, "provider error");
+
+    const failedJob = await prisma.generationJob.findUniqueOrThrow({
+      where: { id: result.job.id },
+    });
+    expect(failedJob.status).toBe("failed");
+
+    // Now submit again on the same session - should be accepted
+    const secondResult = await service.generate({
+      user,
+      body: { ...generateBody(model.id), sessionId: result.session.id, originalPrompt: "retry" },
+      correlationId: user.correlationId!,
+      idempotencyKey: `free-slot-2-${randomUUID()}`,
+    });
+
+    expect(secondResult.job.status).toBe("processing");
+    expect(secondResult.job.id).not.toBe(result.job.id);
+  });
 });

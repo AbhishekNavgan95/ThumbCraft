@@ -154,40 +154,37 @@ export class GenerateService {
         turnSeq,
       });
 
-      let job;
-      try {
-        job = await createGenerationJob(prisma as any, {
-          userId,
-          kind: "generation",
-          coinCost: quote.coinCost,
-          idempotencyKey: input.idempotencyKey ?? randomUUID(),
-          sessionId: session.id,
-          messageId: assistantMessage.id,
-          turnSeq,
-        });
-      } catch (error: any) {
-        if (error?.code === "P2002") {
-          const activeJob = await prisma.generationJob.findFirst({
-            where: {
-              sessionId: session.id,
-              kind: "generation",
-              status: { in: ["created", "reserved", "processing"] },
-            },
-          });
-          throw new AppError(
-            "CONFLICT",
-            "This chat is still generating. Wait for the current image.",
-            409,
-            activeJob ? { jobId: activeJob.id, code: "SESSION_BUSY" } : { code: "SESSION_BUSY" },
-          );
-        }
-        throw error;
-      }
+      const job = await createGenerationJob(prisma as any, {
+        userId,
+        kind: "generation",
+        coinCost: quote.coinCost,
+        idempotencyKey: input.idempotencyKey ?? randomUUID(),
+        sessionId: session.id,
+        messageId: assistantMessage.id,
+        turnSeq,
+      });
 
       result = { userMessage, assistantMessage, job, turnSeq, isFirstTurn, providerInput };
     } catch (error) {
-      if (error instanceof AppError && (error.details as any)?.code === "SESSION_BUSY") {
-        throw new AppError("CONFLICT", error.message, 409, error.details);
+      // A partial unique index allows one non-terminal generation job per
+      // session. Losing that race is a product state, not a validation error.
+      if (isUniqueConstraintError(error)) {
+        const activeJob = await prisma.generationJob.findFirst({
+          where: {
+            sessionId: session.id,
+            kind: "generation",
+            status: { in: ["created", "reserved", "processing"] },
+          },
+          select: { id: true },
+        });
+        if (activeJob) {
+          throw new AppError(
+            "SESSION_BUSY",
+            "This chat is still generating. Wait for the current image.",
+            409,
+            { jobId: activeJob.id },
+          );
+        }
       }
       throw error;
     }
@@ -705,6 +702,15 @@ export class GenerateService {
     const { session } = await ensureSession(this.deps.prisma, userId);
     return session;
   }
+}
+
+function isUniqueConstraintError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: string }).code === "P2002"
+  );
 }
 
 /** Gemini accepts up to 14 reference images per request. */

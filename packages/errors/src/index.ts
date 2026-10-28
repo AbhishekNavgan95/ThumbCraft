@@ -5,6 +5,7 @@ export type ErrorCode =
   | "NOT_FOUND"
   | "INSUFFICIENT_FUNDS"
   | "CONFLICT"
+  | "SESSION_BUSY"
   | "INTERNAL_ERROR"
   | "SERVICE_UNAVAILABLE";
 

@@ -66,6 +66,34 @@ export function isApiError(error: unknown): error is ApiError {
   )
 }
 
+export function getApiErrorDetails(
+  error: unknown,
+): Record<string, unknown> | undefined {
+  if (error === null || typeof error !== "object" || !("data" in error)) {
+    return undefined
+  }
+  const data = (error as { data?: unknown }).data
+  if (!data || typeof data !== "object") return undefined
+  const details = (data as { details?: unknown }).details
+  return details && typeof details === "object"
+    ? (details as Record<string, unknown>)
+    : undefined
+}
+
+/**
+ * The server refuses a second concurrent turn with `SESSION_BUSY` and includes
+ * the in-flight job id so the client can attach to it instead of dropping the
+ * submission.
+ */
+export function getSessionBusyJobId(error: unknown): string | null {
+  if (!isApiError(error)) return null
+  const details = getApiErrorDetails(error)
+  if (error.code !== "SESSION_BUSY" && details?.code !== "SESSION_BUSY") {
+    return null
+  }
+  return typeof details?.jobId === "string" ? details.jobId : null
+}
+
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3000",
   timeout: 120_000,

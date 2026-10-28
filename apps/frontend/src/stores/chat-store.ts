@@ -1,5 +1,9 @@
 import { create } from "zustand"
-import { api, getApiErrorMessage } from "@/lib/api-client"
+import {
+  api,
+  getApiErrorMessage,
+  getSessionBusyJobId,
+} from "@/lib/api-client"
 import { useGenerationStore } from "@/stores/generation-store"
 import { useWalletStore } from "@/stores/wallet-store"
 import type {
@@ -607,11 +611,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
     })
     useGenerationStore.getState().setStep("chat")
 
+    let sessionId: string | null = null
     try {
       const { data: sessionData } = await api.sessions.create({
         title: context.prompt.trim().slice(0, 60) || "New session",
       })
-      const sessionId = sessionData.session.id
+      sessionId = sessionData.session.id
       useGenerationStore.getState().setSessionId(sessionId)
       set({ activeSessionId: sessionId })
 
@@ -647,6 +652,25 @@ export const useChatStore = create<ChatState>((set, get) => ({
       void pollJobUntilDone(jobId, data.session.id || sessionId)
       return data.session.id || sessionId
     } catch (error) {
+      const busyJobId = getSessionBusyJobId(error)
+      if (busyJobId && sessionId) {
+        // The chat already has a turn in flight. Attach to it instead of
+        // losing the submission or clearing the composer.
+        const targetSessionId = sessionId
+        set({
+          isStartingGeneration: false,
+          activeSessionId: targetSessionId,
+          activeJobId: busyJobId,
+          generationError: getApiErrorMessage(
+            error,
+            "This chat is still generating.",
+          ),
+        })
+        void get().loadSessions()
+        void pollJobUntilDone(busyJobId, targetSessionId)
+        return targetSessionId
+      }
+
       set({
         isStartingGeneration: false,
         activeJobId: null,
@@ -749,6 +773,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
       void pollJobUntilDone(data.job.id, sessionId)
       return true
     } catch (error) {
+      const busyJobId = getSessionBusyJobId(error)
+      if (busyJobId) {
+        // A turn is already running in this session. Attach to it.
+        set({
+          isStartingGeneration: false,
+          activeJobId: busyJobId,
+          generationError: getApiErrorMessage(
+            error,
+            "This chat is still generating.",
+          ),
+        })
+        void get().loadSessions()
+        void pollJobUntilDone(busyJobId, sessionId)
+        return true
+      }
+
       set({
         isStartingGeneration: false,
         activeJobId: null,
