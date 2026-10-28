@@ -25,6 +25,7 @@ function testConfig(): GenerationWorkerConfig {
     REDIS_URL: "redis://localhost:6379",
     WALLET_SERVICE_URL: "http://wallet.test",
     FAKE_IMAGE_GENERATION: true,
+    OUTBOX_RELAY_INTERVAL_MS: 5000,
   };
 }
 

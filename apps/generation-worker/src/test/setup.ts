@@ -22,6 +22,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await prisma.$executeRawUnsafe(`
     TRUNCATE TABLE
+      "generation_outbox",
       "generation_jobs",
       "generation_messages",
       "generation_sessions",

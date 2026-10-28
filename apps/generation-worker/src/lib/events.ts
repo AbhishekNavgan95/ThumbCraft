@@ -7,16 +7,21 @@ import {
 } from "@platform/messaging-contract";
 import type { RabbitMQClient } from "@platform/rabbitmq-client";
 
-export async function publishGenerationCompleted(
-  rabbitmq: RabbitMQClient,
-  input: {
-    userId: string;
-    jobId: string;
-    correlationId: string;
-    payload: GenerationCompletedPayload;
-  },
-): Promise<void> {
-  const event: PlatformEvent<GenerationCompletedPayload> = {
+export interface GenerationEventInput<TPayload> {
+  userId: string;
+  jobId: string;
+  correlationId: string;
+  payload: TPayload;
+}
+
+/**
+ * Build the full event envelope before the terminal transaction so the same
+ * eventId is stored in the outbox and reused by every publish attempt.
+ */
+export function buildGenerationCompletedEvent(
+  input: GenerationEventInput<GenerationCompletedPayload>,
+): PlatformEvent<GenerationCompletedPayload> {
+  return {
     eventId: randomUUID(),
     correlationId: input.correlationId,
     timestamp: new Date().toISOString(),
@@ -24,25 +29,37 @@ export async function publishGenerationCompleted(
     jobId: input.jobId,
     payload: input.payload,
   };
-  await rabbitmq.publish(RoutingKeys.GENERATION_COMPLETED, event);
+}
+
+export function buildGenerationFailedEvent(
+  input: GenerationEventInput<GenerationFailedPayload>,
+): PlatformEvent<GenerationFailedPayload> {
+  return {
+    eventId: randomUUID(),
+    correlationId: input.correlationId,
+    timestamp: new Date().toISOString(),
+    userId: input.userId,
+    jobId: input.jobId,
+    payload: input.payload,
+  };
+}
+
+export async function publishGenerationCompleted(
+  rabbitmq: RabbitMQClient,
+  input: GenerationEventInput<GenerationCompletedPayload>,
+): Promise<void> {
+  await rabbitmq.publish(
+    RoutingKeys.GENERATION_COMPLETED,
+    buildGenerationCompletedEvent(input),
+  );
 }
 
 export async function publishGenerationFailed(
   rabbitmq: RabbitMQClient,
-  input: {
-    userId: string;
-    jobId: string;
-    correlationId: string;
-    payload: GenerationFailedPayload;
-  },
+  input: GenerationEventInput<GenerationFailedPayload>,
 ): Promise<void> {
-  const event: PlatformEvent<GenerationFailedPayload> = {
-    eventId: randomUUID(),
-    correlationId: input.correlationId,
-    timestamp: new Date().toISOString(),
-    userId: input.userId,
-    jobId: input.jobId,
-    payload: input.payload,
-  };
-  await rabbitmq.publish(RoutingKeys.GENERATION_FAILED, event);
+  await rabbitmq.publish(
+    RoutingKeys.GENERATION_FAILED,
+    buildGenerationFailedEvent(input),
+  );
 }

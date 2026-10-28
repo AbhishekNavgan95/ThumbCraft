@@ -190,12 +190,34 @@ model GenerationJob {
 
   session GenerationSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
   message GenerationMessage? @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  outbox  GenerationOutbox[]
 
   @@index([userId], map: "idx_generation_jobs_user_id")
   @@index([sessionId], map: "idx_generation_jobs_session_id")
   @@index([messageId], map: "idx_generation_jobs_message_id")
   @@index([kind, status], map: "idx_generation_jobs_kind_status")
   @@map("generation_jobs")
+}
+
+/// Durable terminal event. Written in the same transaction as the job's
+/// terminal status, then published (and retried) by the outbox relay.
+/// At-least-once delivery is safe: wallet consumers dedupe on jobId.
+model GenerationOutbox {
+  /// Event id. Reused as the RabbitMQ messageId when publishing.
+  id          String    @id @db.Uuid
+  jobId       String?   @unique @map("job_id") @db.Uuid
+  routingKey  String    @map("routing_key")
+  /// Whole PlatformEvent (envelope + payload).
+  payload     Json
+  attempts    Int       @default(0)
+  lastError   String?   @map("last_error")
+  publishedAt DateTime? @map("published_at") @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  job GenerationJob? @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([publishedAt, createdAt], map: "idx_generation_outbox_pending")
+  @@map("generation_outbox")
 }
 
 /// Admin-managed library section (e.g. Gaming, Tech, Vlog).

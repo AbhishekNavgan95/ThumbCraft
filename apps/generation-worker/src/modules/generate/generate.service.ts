@@ -5,9 +5,10 @@ import type { RabbitMQClient } from "@platform/rabbitmq-client";
 import type { Queue } from "bullmq";
 import type { Prisma, PrismaClient } from "../../generated/prisma/client.js";
 import {
-  publishGenerationCompleted,
-  publishGenerationFailed,
+  buildGenerationCompletedEvent,
+  buildGenerationFailedEvent,
 } from "../../lib/events.js";
+import { relayOutbox } from "../../lib/outbox.js";
 import type {
   WalletClient,
   WalletUserHeaders,
@@ -27,18 +28,22 @@ import {
   updateJobStatus,
 } from "../jobs/job.service.js";
 import {
-  completeAssistantMessage,
   createAssistantMessage,
   createUserMessage,
   failAssistantMessage,
   setUserProviderInput,
   toPublicMessage,
-  updateSessionPointers,
 } from "../messages/message.service.js";
 import {
   ensureSession,
   findSessionByIdForUser,
 } from "../sessions/session.service.js";
+import {
+  ensureTerminalEvent,
+  finalizeCompleted,
+  finalizeFailed,
+  isTerminalJobStatus,
+} from "./finalize.js";
 import type { GenerateRequestBody, GenerateResult } from "./generate.types.js";
 
 export class GenerateService {
@@ -236,17 +241,23 @@ export class GenerateService {
 
   /**
    * BullMQ worker path: run LLM / fake generation for a reserved job.
-   * Retries rethrow until attempts are exhausted; final failure publishes release event.
+   * Retries rethrow until attempts are exhausted. The expired attempt is
+   * finalized by `finalizeJobFailure`, which stores the release event.
    */
   async processQueuedJob(payload: GenerationJobPayload): Promise<void> {
-    const { prisma, logger, rabbitmq } = this.deps;
+    const { prisma, logger } = this.deps;
     const { jobId, userId, correlationId } = payload;
 
     const job = await prisma.generationJob.findUnique({ where: { id: jobId } });
     if (!job) {
       throw new AppError("NOT_FOUND", `Generation job not found: ${jobId}`, 404);
     }
-    if (job.status === "captured" || job.status === "released") {
+    if (isTerminalJobStatus(job.status)) {
+      if (job.status === "captured") {
+        // A legacy/stale row may have finished before the outbox existed.
+        await ensureTerminalEvent(this.deps, job, payload);
+        await this.tryRelayOutbox();
+      }
       logger.info({ jobId, status: job.status }, "skipping already-finished job");
       return;
     }
@@ -269,8 +280,60 @@ export class GenerateService {
       );
     }
 
+    const session = await prisma.generationSession.findUnique({
+      where: { id: job.sessionId },
+    });
+    if (!session) {
+      throw new AppError("NOT_FOUND", "Session missing for generation job", 404);
+    }
+
     if (assistantMessage.status === "completed") {
-      logger.info({ jobId }, "assistant already completed — skipping");
+      if (assistantMessage.imageUrl) {
+        // The image exists. Finish the job, never strand or refund it.
+        await finalizeCompleted(this.deps, {
+          jobId: job.id,
+          assistantId: assistantMessage.id,
+          sessionId: session.id,
+          interactionId:
+            assistantMessage.interactionId ?? session.latestInteractionId,
+          event: buildGenerationCompletedEvent({
+            userId,
+            jobId: job.id,
+            correlationId,
+            payload: {
+              kind: "generation",
+              imageUrls: [assistantMessage.imageUrl],
+              email: payload.email,
+              name: payload.name,
+            },
+          }),
+        });
+        await this.tryRelayOutbox();
+        return;
+      }
+
+      // A completed row without an image did not deliver anything.
+      logger.error(
+        { jobId },
+        "assistant message is completed but has no image — failing job",
+      );
+      await finalizeFailed(this.deps, {
+        jobId: job.id,
+        assistantId: assistantMessage.id,
+        reason: "Assistant message completed without an image",
+        event: buildGenerationFailedEvent({
+          userId,
+          jobId: job.id,
+          correlationId,
+          payload: {
+            kind: "generation",
+            error: "Assistant message completed without an image",
+            email: payload.email,
+            name: payload.name,
+          },
+        }),
+      });
+      await this.tryRelayOutbox();
       return;
     }
 
@@ -279,13 +342,6 @@ export class GenerateService {
     });
     if (!userMessage) {
       throw new AppError("NOT_FOUND", "User message missing for generation job", 404);
-    }
-
-    const session = await prisma.generationSession.findUnique({
-      where: { id: job.sessionId },
-    });
-    if (!session) {
-      throw new AppError("NOT_FOUND", "Session missing for generation job", 404);
     }
 
     const model = await prisma.generationModel.findUnique({
@@ -422,25 +478,7 @@ export class GenerateService {
         interactionId = result.interactionId ?? null;
       }
 
-      const completedAssistant = await completeAssistantMessage(
-        prisma,
-        assistantMessage.id,
-        {
-          imageUrl,
-          mimeType,
-          width,
-          height,
-          interactionId,
-        },
-      );
-
-      await updateSessionPointers(prisma, session.id, {
-        latestMessageId: completedAssistant.id,
-        latestAssistantMessageId: completedAssistant.id,
-        latestInteractionId: interactionId ?? session.latestInteractionId,
-      });
-
-      await publishGenerationCompleted(rabbitmq, {
+      const event = buildGenerationCompletedEvent({
         userId,
         jobId: job.id,
         correlationId,
@@ -452,7 +490,18 @@ export class GenerateService {
         },
       });
 
-      await updateJobStatus(prisma, job.id, "captured");
+      await finalizeCompleted(this.deps, {
+        jobId: job.id,
+        assistantId: assistantMessage.id,
+        assistant: { imageUrl, mimeType, width, height, interactionId },
+        sessionId: session.id,
+        interactionId: interactionId ?? session.latestInteractionId,
+        event,
+      });
+
+      // The job is durably captured. A failed immediate publish only means the
+      // outbox row waits for the next relay tick, so never rethrow for it.
+      await this.tryRelayOutbox();
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Image generation failed";
@@ -467,14 +516,8 @@ export class GenerateService {
         "image generation failed (will retry if attempts remain)",
       );
 
-      // Let BullMQ retry; only finalize failure when this throw is the last attempt.
-      // The Worker wraps this — we detect final failure in a dedicated handler below.
-      // For simplicity: always rethrow; onFailed in worker OR check attempts here.
-      // We finalize in `finalizeJobFailure` called from the worker's failed event
-      // only when attempts are exhausted — but that can race. Safer: check in catch
-      // via optional attemptsMade passed in... For now rethrow and use UnrecoverableError
-      // pattern: processQueuedJob receives attempts from payload extension.
-
+      // Let BullMQ retry. The finalizer for exhausted retries lives in
+      // `finalizeJobFailure`, invoked from the Worker's failed event.
       throw error instanceof AppError
         ? error
         : new AppError("INTERNAL_ERROR", message, 500);
@@ -483,45 +526,68 @@ export class GenerateService {
 
   /**
    * Called when BullMQ has exhausted retries for a generation job.
+   *
+   * A delivered image always wins over the failure path: if the assistant row
+   * is completed with an image, the job is captured and the coins stay spent.
    */
   async finalizeJobFailure(
     payload: GenerationJobPayload,
     errorMessage: string,
   ): Promise<void> {
-    const { prisma, logger, rabbitmq, wallet } = this.deps;
+    const { prisma, logger } = this.deps;
     const { jobId, userId, correlationId } = payload;
 
     const job = await prisma.generationJob.findUnique({ where: { id: jobId } });
-    if (!job) return;
-    if (
-      job.status === "captured" ||
-      job.status === "released" ||
-      job.status === "failed"
-    ) {
+    if (!job || isTerminalJobStatus(job.status)) return;
+
+    const assistant = job.messageId
+      ? await prisma.generationMessage.findUnique({ where: { id: job.messageId } })
+      : null;
+
+    if (assistant?.status === "completed" && assistant.imageUrl) {
+      logger.warn(
+        { jobId },
+        "job failed after delivering an image — capturing instead of refunding",
+      );
+
+      let sessionInteractionId: string | null | undefined;
+      if (job.sessionId) {
+        const session = await prisma.generationSession.findUnique({
+          where: { id: job.sessionId },
+        });
+        if (session) {
+          sessionInteractionId =
+            assistant.interactionId ?? session.latestInteractionId;
+        }
+      }
+
+      await finalizeCompleted(this.deps, {
+        jobId,
+        assistantId: assistant.id,
+        sessionId: job.sessionId ?? undefined,
+        interactionId: sessionInteractionId,
+        event: buildGenerationCompletedEvent({
+          userId,
+          jobId,
+          correlationId,
+          payload: {
+            kind: "generation",
+            imageUrls: [assistant.imageUrl],
+            email: payload.email,
+            name: payload.name,
+          },
+        }),
+      });
+
+      await this.tryRelayOutbox();
       return;
     }
 
-    if (job.messageId) {
-      const assistant = await prisma.generationMessage.findUnique({
-        where: { id: job.messageId },
-      });
-      if (assistant && assistant.status !== "completed") {
-        await failAssistantMessage(prisma, job.messageId, errorMessage);
-      }
-    }
-
-    await updateJobStatus(prisma, jobId, "failed", errorMessage);
-
-    const userHeaders: WalletUserHeaders = {
-      userId,
-      email: payload.email,
-      name: payload.name,
-      role: payload.role,
-      correlationId,
-    };
-
-    try {
-      await publishGenerationFailed(rabbitmq, {
+    await finalizeFailed(this.deps, {
+      jobId,
+      assistantId: job.messageId ?? undefined,
+      reason: errorMessage,
+      event: buildGenerationFailedEvent({
         userId,
         jobId,
         correlationId,
@@ -531,21 +597,24 @@ export class GenerateService {
           email: payload.email,
           name: payload.name,
         },
-      });
-    } catch (publishError) {
-      logger.error(
-        { err: publishError, jobId },
-        "failed to publish generation.failed — attempting sync release",
+      }),
+    });
+
+    await this.tryRelayOutbox();
+  }
+
+  /**
+   * Best-effort immediate publish. Failure is not an error: the event is
+   * already durable and the scheduled relay will retry it.
+   */
+  private async tryRelayOutbox(): Promise<void> {
+    try {
+      await relayOutbox(this.deps);
+    } catch (error) {
+      this.deps.logger.warn(
+        { err: error },
+        "generation outbox relay attempt failed; next tick will retry",
       );
-      try {
-        await wallet.release(userHeaders, { jobId });
-        await updateJobStatus(prisma, jobId, "released", errorMessage);
-      } catch (releaseError) {
-        logger.error(
-          { err: releaseError, jobId },
-          "sync wallet release failed after generation error",
-        );
-      }
     }
   }
 

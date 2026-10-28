@@ -38,6 +38,9 @@ export const configSchema = baseServiceSchema.extend({
     .enum(["true", "false"])
     .default("false")
     .transform((v) => v === "true"),
+
+  /** How often the worker retries unpublished terminal events (outbox). */
+  OUTBOX_RELAY_INTERVAL_MS: z.coerce.number().int().positive().default(5000),
 });
 
 export type GenerationWorkerConfig = z.infer<typeof configSchema>;

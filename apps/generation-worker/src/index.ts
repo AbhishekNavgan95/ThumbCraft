@@ -4,6 +4,7 @@ import type { Worker } from "bullmq";
 import { createApp } from "./app.js";
 import { loadGenerationConfig } from "./config.js";
 import { createPrismaClient } from "./db/index.js";
+import { startOutboxRelay } from "./lib/outbox.js";
 import { WalletClient } from "./lib/wallet-client.js";
 import { EnhanceService } from "./modules/enhance/enhance.service.js";
 import { GenerateService } from "./modules/generate/generate.service.js";
@@ -80,6 +81,7 @@ const app = await createApp({
 });
 
 let generationWorker: Worker<GenerationJobPayload> | null = null;
+let outboxRelay: ReturnType<typeof startOutboxRelay> | null = null;
 
 async function start() {
   try {
@@ -87,6 +89,17 @@ async function start() {
     logger.info("database connected");
     await rabbitmq.connect();
     logger.info("rabbitmq connected");
+
+    outboxRelay = startOutboxRelay({
+      prisma,
+      rabbitmq,
+      logger,
+      intervalMs: config.OUTBOX_RELAY_INTERVAL_MS,
+    });
+    logger.info(
+      { intervalMs: config.OUTBOX_RELAY_INTERVAL_MS },
+      "generation outbox relay started",
+    );
 
     // Separate Redis connection for the Worker (BullMQ recommendation).
     const workerRedis = createRedisConnection(config.REDIS_URL);
@@ -107,6 +120,7 @@ async function start() {
 
 async function shutdown() {
   logger.info("shutting down");
+  outboxRelay?.stop();
   if (generationWorker) {
     await generationWorker.close();
   }
