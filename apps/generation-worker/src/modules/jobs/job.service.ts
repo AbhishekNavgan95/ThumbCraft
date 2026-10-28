@@ -14,6 +14,7 @@ export async function createGenerationJob(
     idempotencyKey: string;
     sessionId?: string;
     messageId?: string;
+    turnSeq?: number;
   },
 ) {
   try {
@@ -26,6 +27,7 @@ export async function createGenerationJob(
         sessionId: input.sessionId,
         messageId: input.messageId,
         status: "created",
+        turnSeq: input.turnSeq,
       },
     });
   } catch (error) {

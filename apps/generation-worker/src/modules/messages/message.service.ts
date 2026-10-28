@@ -19,6 +19,7 @@ export interface CreateUserMessageInput {
   requiredAspectRatio: string;
   requiredResolution: string;
   metadata?: Prisma.InputJsonValue;
+  turnSeq?: number;
 }
 
 export interface CreateAssistantMessageInput {
@@ -26,6 +27,7 @@ export interface CreateAssistantMessageInput {
   modelId: string;
   referenceId: string;
   status?: MessageStatus;
+  turnSeq?: number;
 }
 
 export function toPublicMessage(message: {
@@ -101,6 +103,7 @@ export async function createUserMessage(
       requiredAspectRatio: input.requiredAspectRatio,
       requiredResolution: input.requiredResolution,
       metadata: input.metadata ?? {},
+      turnSeq: input.turnSeq,
     },
   });
 }
@@ -121,6 +124,7 @@ export async function createAssistantMessage(
       referenceImageUrls: [],
       referenceTemplateIds: [],
       metadata: {},
+      turnSeq: input.turnSeq,
     },
   });
 }

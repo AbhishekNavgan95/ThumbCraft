@@ -89,6 +89,7 @@ model GenerationSession {
   /// Soft pointer to the latest assistant message (current image).
   latestAssistantMessageId String?       @map("latest_assistant_message_id") @db.Uuid
   status                   SessionStatus @default(active)
+  turnSeq                  Int           @default(0) @map("turn_seq")
   createdAt                DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -152,6 +153,7 @@ model GenerationMessage {
 
   metadata  Json     @default("{}")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  turnSeq   Int?     @map("turn_seq")
 
   session          GenerationSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   model            GenerationModel     @relation(fields: [modelId], references: [id], onDelete: Restrict)
@@ -184,6 +186,7 @@ model GenerationJob {
   /// Client Idempotency-Key — unique per charge attempt.
   idempotencyKey String              @unique @map("idempotency_key")
   error          String?
+  turnSeq        Int?                @map("turn_seq")
   createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
   completedAt    DateTime?           @map("completed_at") @db.Timestamptz(6)

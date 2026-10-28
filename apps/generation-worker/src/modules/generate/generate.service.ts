@@ -97,61 +97,102 @@ export class GenerateService {
     }
 
     const session = await this.resolveSession(userId, input.body.sessionId);
-    const isFirstTurn = !session.latestInteractionId;
-
-    const preferences: ThumbnailPreferences = input.body.preferences ?? {};
-    const userText = resolveUserText({
-      originalPrompt: input.body.originalPrompt,
-      enhancedPrompt: input.body.enhancedPrompt,
-      usedEnhancedPrompt: input.body.usedEnhancedPrompt,
-    });
-
-    const providerInput = resolveProviderInput({
-      isFirstTurn,
-      userText,
-      preferences,
-    });
-
     const quote = await wallet.quote(input.user, { kind: "generation" });
 
-    const userMessage = await createUserMessage(prisma, {
-      sessionId: session.id,
-      modelId: model.id,
-      originalPrompt: input.body.originalPrompt,
-      enhancedPrompt: input.body.enhancedPrompt ?? null,
-      usedEnhancedPrompt: Boolean(input.body.usedEnhancedPrompt),
-      providerInput,
-      preferences: {
-        ...preferences,
-        _catalogVersion: PREFERENCE_CATALOG_VERSION,
-      } as Prisma.InputJsonValue,
-      referenceImageUrls: input.body.referenceImageUrls ?? [],
-      referenceTemplateIds: input.body.referenceTemplateIds ?? [],
-      requiredAspectRatio: input.body.requiredAspectRatio,
-      requiredResolution: input.body.requiredResolution,
-      metadata: {
-        correlationId: input.correlationId,
+    let result: any;
+    try {
+      // Allocate turn sequence atomically
+      const updatedSession = await prisma.$queryRaw<Array<{ turn_seq: number }>>`
+        UPDATE generation_sessions
+        SET turn_seq = turn_seq + 1
+        WHERE id = ${session.id}::uuid
+        RETURNING turn_seq
+      `;
+      const turnSeq = updatedSession[0]?.turn_seq ?? 1;
+      const isFirstTurn = turnSeq === 1;
+
+      const preferences: ThumbnailPreferences = input.body.preferences ?? {};
+      const userText = resolveUserText({
+        originalPrompt: input.body.originalPrompt,
+        enhancedPrompt: input.body.enhancedPrompt,
+        usedEnhancedPrompt: input.body.usedEnhancedPrompt,
+      });
+
+      const providerInput = resolveProviderInput({
         isFirstTurn,
-      },
-    });
+        userText,
+        preferences,
+      });
 
-    await setUserProviderInput(prisma, userMessage.id, providerInput);
+      const userMessage = await createUserMessage(prisma as any, {
+        sessionId: session.id,
+        modelId: model.id,
+        originalPrompt: input.body.originalPrompt,
+        enhancedPrompt: input.body.enhancedPrompt ?? null,
+        usedEnhancedPrompt: Boolean(input.body.usedEnhancedPrompt),
+        providerInput: null,
+        preferences: {
+          ...preferences,
+          _catalogVersion: PREFERENCE_CATALOG_VERSION,
+        } as Prisma.InputJsonValue,
+        referenceImageUrls: input.body.referenceImageUrls ?? [],
+        referenceTemplateIds: input.body.referenceTemplateIds ?? [],
+        requiredAspectRatio: input.body.requiredAspectRatio,
+        requiredResolution: input.body.requiredResolution,
+        metadata: {
+          correlationId: input.correlationId,
+          isFirstTurn,
+        },
+        turnSeq,
+      });
 
-    const assistantMessage = await createAssistantMessage(prisma, {
-      sessionId: session.id,
-      modelId: model.id,
-      referenceId: userMessage.id,
-      status: "queued",
-    });
+      const assistantMessage = await createAssistantMessage(prisma as any, {
+        sessionId: session.id,
+        modelId: model.id,
+        referenceId: userMessage.id,
+        status: "queued",
+        turnSeq,
+      });
 
-    const job = await createGenerationJob(prisma, {
-      userId,
-      kind: "generation",
-      coinCost: quote.coinCost,
-      idempotencyKey: input.idempotencyKey ?? randomUUID(),
-      sessionId: session.id,
-      messageId: assistantMessage.id,
-    });
+      let job;
+      try {
+        job = await createGenerationJob(prisma as any, {
+          userId,
+          kind: "generation",
+          coinCost: quote.coinCost,
+          idempotencyKey: input.idempotencyKey ?? randomUUID(),
+          sessionId: session.id,
+          messageId: assistantMessage.id,
+          turnSeq,
+        });
+      } catch (error: any) {
+        if (error?.code === "P2002") {
+          const activeJob = await prisma.generationJob.findFirst({
+            where: {
+              sessionId: session.id,
+              kind: "generation",
+              status: { in: ["created", "reserved", "processing"] },
+            },
+          });
+          throw new AppError(
+            "CONFLICT",
+            "This chat is still generating. Wait for the current image.",
+            409,
+            activeJob ? { jobId: activeJob.id, code: "SESSION_BUSY" } : { code: "SESSION_BUSY" },
+          );
+        }
+        throw error;
+      }
+
+      result = { userMessage, assistantMessage, job, turnSeq, isFirstTurn, providerInput };
+    } catch (error) {
+      if (error instanceof AppError && (error.details as any)?.code === "SESSION_BUSY") {
+        throw new AppError("CONFLICT", error.message, 409, error.details);
+      }
+      throw error;
+    }
+
+    const { userMessage, assistantMessage, job, isFirstTurn, providerInput } = result;
 
     try {
       await wallet.reserve(input.user, {
@@ -162,8 +203,10 @@ export class GenerateService {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Wallet reserve failed";
-      await failAssistantMessage(prisma, assistantMessage.id, message);
-      await updateJobStatus(prisma, job.id, "failed", message);
+      try {
+        await failAssistantMessage(prisma, assistantMessage.id, message);
+        await updateJobStatus(prisma, job.id, "failed", message);
+      } catch {}
       throw error;
     }
 
@@ -351,15 +394,6 @@ export class GenerateService {
       throw new AppError("NOT_FOUND", "Model missing for generation job", 404);
     }
 
-    const providerInput = userMessage.providerInput?.trim();
-    if (!providerInput) {
-      throw new AppError(
-        "VALIDATION_ERROR",
-        "User message has no providerInput",
-        422,
-      );
-    }
-
     const aspectRatio = userMessage.requiredAspectRatio;
     const resolution = userMessage.requiredResolution;
     if (!aspectRatio || !resolution) {
@@ -370,8 +404,40 @@ export class GenerateService {
       );
     }
 
-    const metadata = (userMessage.metadata ?? {}) as Record<string, unknown>;
-    const isFirstTurn = Boolean(metadata.isFirstTurn);
+    // Decide framing at execution time from session head
+    const isFirstTurn = (userMessage.turnSeq ?? 0) === 1;
+    const superseded = (userMessage.turnSeq ?? 0) < (session.turnSeq ?? 0);
+
+    if (superseded) {
+      logger.warn(
+        { jobId, turnSeq: userMessage.turnSeq, head: session.turnSeq },
+        "superseded turn",
+      );
+    }
+
+    // Compute providerInput at execution time
+    const preferences = (userMessage.preferences as ThumbnailPreferences) ?? {};
+    const userText = resolveUserText({
+      originalPrompt: userMessage.originalPrompt ?? "",
+      enhancedPrompt: userMessage.enhancedPrompt,
+      usedEnhancedPrompt: userMessage.usedEnhancedPrompt,
+    });
+
+    const providerInput = resolveProviderInput({
+      isFirstTurn,
+      userText,
+      preferences,
+    }).trim();
+
+    if (!providerInput) {
+      throw new AppError(
+        "VALIDATION_ERROR",
+        "User message has no providerInput",
+        422,
+      );
+    }
+
+    await setUserProviderInput(prisma, userMessage.id, providerInput);
 
     try {
       const fake = Boolean(this.deps.fakeImageGeneration);
@@ -439,9 +505,7 @@ export class GenerateService {
           input: providerInput,
           aspectRatio,
           resolution,
-          previousInteractionId: isFirstTurn
-            ? null
-            : session.latestInteractionId,
+          previousInteractionId: isFirstTurn || superseded ? null : session.latestInteractionId,
           referenceImages,
         });
 

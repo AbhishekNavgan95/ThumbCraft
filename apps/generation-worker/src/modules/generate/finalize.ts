@@ -91,16 +91,54 @@ export async function finalizeCompleted(
     }
 
     if (input.sessionId && input.assistantId) {
-      await tx.generationSession.updateMany({
-        where: { id: input.sessionId },
-        data: {
-          latestMessageId: input.assistantId,
-          latestAssistantMessageId: input.assistantId,
-          ...(input.interactionId !== undefined
-            ? { latestInteractionId: input.interactionId }
-            : {}),
-        },
+      // Get job turnSeq for monotonic head update
+      const job = await tx.generationJob.findUnique({
+        where: { id: input.jobId },
+        select: { turnSeq: true },
       });
+      const turnSeq = job?.turnSeq ?? null;
+      if (turnSeq !== null) {
+        // Only advance head if this turn is not superseded
+        const interactionId = input.interactionId;
+        if (interactionId === undefined) {
+          await tx.$executeRaw`
+            UPDATE generation_sessions
+            SET latest_message_id = ${input.assistantId}::uuid,
+                latest_assistant_message_id = ${input.assistantId}::uuid
+            WHERE id = ${input.sessionId}::uuid
+              AND turn_seq <= ${turnSeq}
+          `;
+        } else if (interactionId === null) {
+          await tx.$executeRaw`
+            UPDATE generation_sessions
+            SET latest_message_id = ${input.assistantId}::uuid,
+                latest_assistant_message_id = ${input.assistantId}::uuid,
+                latest_interaction_id = NULL
+            WHERE id = ${input.sessionId}::uuid
+              AND turn_seq <= ${turnSeq}
+          `;
+        } else {
+          await tx.$executeRaw`
+            UPDATE generation_sessions
+            SET latest_message_id = ${input.assistantId}::uuid,
+                latest_assistant_message_id = ${input.assistantId}::uuid,
+                latest_interaction_id = ${interactionId}
+            WHERE id = ${input.sessionId}::uuid
+              AND turn_seq <= ${turnSeq}
+          `;
+        }
+      } else {
+        await tx.generationSession.updateMany({
+          where: { id: input.sessionId },
+          data: {
+            latestMessageId: input.assistantId,
+            latestAssistantMessageId: input.assistantId,
+            ...(input.interactionId !== undefined
+              ? { latestInteractionId: input.interactionId }
+              : {}),
+          },
+        });
+      }
     }
 
     await tx.generationOutbox.create({
